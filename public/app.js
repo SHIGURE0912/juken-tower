@@ -20,6 +20,7 @@ let selectedGradeSubject = null;
 let timerSeconds = 0;
 let timerInterval = null;
 let detailDate = null;
+let calendarViewDate = new Date();
 
 // ---------- 日付まわりの小さな関数 ----------
 
@@ -390,10 +391,19 @@ function showCompleteScreen(subject, minutes) {
 
 // ---------- 履歴・カレンダー画面 ----------
 
+function changeCalendarMonth(diff) {
+  calendarViewDate = new Date(
+    calendarViewDate.getFullYear(),
+    calendarViewDate.getMonth() + diff,
+    1
+  );
+  renderCalendar();
+}
+
 function renderCalendar() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth();
 
   document.getElementById(
     "calendar-title"
@@ -927,6 +937,12 @@ function setupEvents() {
   document
     .getElementById("day-event-add-btn")
     .addEventListener("click", addDayEvent);
+  document
+    .getElementById("calendar-prev-btn")
+    .addEventListener("click", () => changeCalendarMonth(-1));
+  document
+    .getElementById("calendar-next-btn")
+    .addEventListener("click", () => changeCalendarMonth(1));
 
   document
     .getElementById("exam-day-save-btn")
