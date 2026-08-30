@@ -1,0 +1,890 @@
+:root {
+  --color-kokugo: #ff6b81;   /* 国語: 赤・ピンク */
+  --color-sansu: #4a90e2;    /* 算数: 青 */
+  --color-rika: #4caf50;     /* 理科: 緑 */
+  --color-shakai: #ffa726;   /* 社会: 黄・オレンジ */
+  --bg: #fff9f0;
+  --card-bg: #ffffff;
+  --text: #4a4a4a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  padding: 16px 16px 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.app-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.app-header h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.welcome-text {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.logout-btn {
+  border: none;
+  background: none;
+  color: #aaa;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.streak-badge {
+  background: #fff3cd;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-weight: bold;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* 積み上げタワー */
+.tower-area {
+  width: 100%;
+  max-width: 220px;
+  height: 260px;
+  background: linear-gradient(#e8f4ff, #ffffff 90%);
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.tower {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.tower-block {
+  min-height: 14px;
+  margin: 2px 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.1);
+}
+
+.tower-block.new {
+  animation: grow-in 0.5s ease-out;
+}
+
+@keyframes grow-in {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.total-info {
+  font-size: 13px;
+  color: #888;
+  margin: 4px 0 12px;
+}
+
+/* 教科選択 */
+.subject-select {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.subject-btn {
+  padding: 16px 0;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  opacity: 0.55;
+  transform: scale(0.97);
+  transition: all 0.15s;
+}
+
+.subject-btn[data-subject="国語"] { background: var(--color-kokugo); }
+.subject-btn[data-subject="算数"] { background: var(--color-sansu); }
+.subject-btn[data-subject="理科"] { background: var(--color-rika); }
+.subject-btn[data-subject="社会"] { background: var(--color-shakai); }
+
+.subject-btn.selected {
+  opacity: 1;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* タイマー */
+.timer-box {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+
+.timer-display {
+  font-size: 40px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 10px;
+}
+
+.action-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  background: #6c63ff;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.action-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.stop-btn {
+  background: #ff7043;
+}
+
+/* 手入力 */
+.manual-box {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 10px;
+}
+
+.manual-box p {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+#manual-minutes {
+  width: 80px;
+  padding: 8px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  margin-right: 8px;
+}
+
+.home-message {
+  color: #e53935;
+  font-size: 16px;
+  font-weight: bold;
+  min-height: 24px;
+  background: #ffebee;
+  border-radius: 8px;
+  padding: 4px 0;
+  width: 100%;
+  text-align: center;
+}
+
+.home-message:empty {
+  background: none;
+  padding: 4px 0;
+}
+
+/* 下部ナビ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  background: white;
+  padding: 10px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+
+.nav-btn {
+  border: none;
+  background: none;
+  padding: 8px 16px;
+  font-size: 15px;
+  color: #aaa;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.nav-btn.active {
+  color: #6c63ff;
+  background: #eeecff;
+}
+
+/* 記録完了画面 */
+#complete-screen {
+  justify-content: center;
+  background: #fffaf0;
+}
+
+.complete-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#complete-title {
+  font-size: 28px;
+}
+
+.complete-message {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff7043;
+  margin-bottom: 8px;
+}
+
+/* カレンダー */
+.calendar-header {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.calendar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.calendar .weekday {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 1px solid #eee;
+  cursor: pointer;
+  position: relative;
+}
+
+.calendar-day.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.calendar-day.today {
+  border: 2px solid #6c63ff;
+}
+
+.calendar-day.has-note::after {
+  content: "📝";
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: 8px;
+}
+
+.calendar-day.has-event::before {
+  content: "📌";
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 8px;
+}
+
+.day-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.day-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* 1週間の比較グラフ */
+.section-title {
+  width: 100%;
+  font-size: 15px;
+  margin: 4px 0 8px;
+}
+
+.weekly-chart {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 8px 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.weekly-chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.weekly-bar-wrap {
+  height: 160px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.weekly-bar {
+  width: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.weekly-bar-segment {
+  width: 100%;
+}
+
+.weekly-total-label {
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+  height: 12px;
+}
+
+.weekly-day-label {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.calendar-hint {
+  width: 100%;
+  font-size: 12px;
+  color: #999;
+  margin: 0 0 6px;
+}
+
+.subject-totals {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.subject-total-card {
+  border-radius: 12px;
+  padding: 12px;
+  color: white;
+  text-align: center;
+}
+
+.subject-total-card .label {
+  font-size: 13px;
+}
+
+.subject-total-card .value {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* 1日の記録・メモ画面 */
+.day-detail-records {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.day-detail-record-row {
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.no-record-text {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+}
+
+.note-box {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.note-box p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #888;
+}
+
+#day-note-input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.saved-msg {
+  color: #4caf50;
+  font-size: 13px;
+  font-weight: bold;
+  min-height: 18px;
+}
+
+.back-btn {
+  background: #9e9e9e;
+}
+
+.small-delete-btn {
+  border: none;
+  background: #eee;
+  color: #999;
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* 予定（イベント） */
+.day-events-list {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.day-event-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff8e6;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.event-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.event-add-row input {
+  flex: 1;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+/* カウントダウン（日めくり） */
+.countdown-card {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.countdown-set-box {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.countdown-set-box p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.countdown-set-box input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.countdown-display-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.countdown-display-box[hidden] {
+  display: none;
+}
+
+.countdown-page {
+  flex: 1;
+  background: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-top: 8px solid #ff7043;
+}
+
+.countdown-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: bold;
+}
+
+.countdown-number {
+  font-size: 44px;
+  font-weight: bold;
+  color: #ff7043;
+  line-height: 1.1;
+}
+
+.countdown-unit {
+  font-size: 13px;
+  color: #888;
+}
+
+.countdown-edit-btn {
+  border: none;
+  background: #eee;
+  color: #888;
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 今週の目標 */
+.goal-card {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.goal-view-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.goal-edit-btn {
+  border: none;
+  background: #eeecff;
+  color: #6c63ff;
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.goal-memo-text {
+  font-size: 14px;
+  color: #555;
+  margin: 0 0 8px;
+}
+
+.goal-progress-bar-bg {
+  width: 100%;
+  height: 14px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.goal-progress-bar-fg {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6c63ff, #8f88ff);
+  transition: width 0.3s;
+}
+
+.goal-progress-text {
+  font-size: 12px;
+  color: #888;
+  margin: 6px 0 0;
+}
+
+.goal-edit-box p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #888;
+}
+
+.goal-edit-box input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+/* せいせき画面 */
+.grade-chart-box {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  min-height: 80px;
+  position: relative;
+}
+
+.grade-tooltip {
+  position: absolute;
+  transform: translate(-50%, -115%);
+  background: #333;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.grade-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+.tooltip-date {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.tooltip-comment {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.3);
+  font-size: 11px;
+  max-width: 160px;
+  white-space: normal;
+}
+
+.grade-chart-hint {
+  color: #999;
+  font-size: 13px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.grade-chart {
+  width: 100%;
+  height: auto;
+}
+
+.score-form {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.score-form p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.score-form-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.score-form-row input {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+#score-comment-input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.score-list {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.score-row {
+  background: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.score-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.score-row-comment {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #777;
+}
+
+/* ログイン画面 */
+#login-screen {
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 320px;
+  background: white;
+  border-radius: 16px;
+  padding: 28px 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.login-title {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+
+.login-subtitle {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 20px;
+}
+
+.login-box input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.login-box .action-btn {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.secondary-btn {
+  background: #eeecff;
+  color: #6c63ff;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "juken-tower",
+  "version": "1.0.0",
+  "private": true,
+  "description": "中学受験の勉強記録タワーアプリ",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongodb": "^6.9.0",
+    "bcryptjs": "^2.4.3"
+  }
+}

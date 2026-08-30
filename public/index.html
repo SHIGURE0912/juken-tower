@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>がんばれ受験タワー</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ログイン画面 -->
+  <section id="login-screen" class="screen">
+    <div class="login-box">
+      <h1 class="login-title">がんばれ受験タワー</h1>
+      <p class="login-subtitle">名前と暗証番号（4桁の数字）でログインしよう</p>
+
+      <input id="login-name-input" type="text" placeholder="名前" autocomplete="username" />
+      <input
+        id="login-pin-input"
+        type="password"
+        inputmode="numeric"
+        maxlength="4"
+        placeholder="暗証番号（4桁）"
+        autocomplete="current-password"
+      />
+
+      <button id="login-btn" class="action-btn">ログイン</button>
+      <button id="register-btn" class="action-btn secondary-btn">
+        はじめての人はこちら（新しく登録する）
+      </button>
+      <p id="login-message" class="home-message"></p>
+    </div>
+  </section>
+
+  <!-- ホーム画面 -->
+  <section id="home-screen" class="screen" hidden>
+    <header class="app-header">
+      <div>
+        <h1>がんばれ受験タワー</h1>
+        <p id="welcome-text" class="welcome-text"></p>
+      </div>
+      <div class="header-right">
+        <div id="streak-badge" class="streak-badge">🔥 0日連続</div>
+        <button id="logout-btn" class="logout-btn">ログアウト</button>
+      </div>
+    </header>
+
+    <div id="countdown-card" class="countdown-card">
+      <div id="countdown-set-box" class="countdown-set-box" hidden>
+        <p>大事な日（受験本番など）を登録しよう</p>
+        <input id="exam-label-input" type="text" placeholder="呼び方（例: 受験本番）" value="受験本番" />
+        <input id="exam-date-input" type="date" />
+        <button id="exam-day-save-btn" class="action-btn">登録する</button>
+      </div>
+      <div id="countdown-display-box" class="countdown-display-box" hidden>
+        <div class="countdown-page">
+          <div id="countdown-label" class="countdown-label">受験本番まで</div>
+          <div id="countdown-number" class="countdown-number">0</div>
+          <div class="countdown-unit">日</div>
+        </div>
+        <button id="exam-day-edit-btn" class="countdown-edit-btn">変更する</button>
+      </div>
+    </div>
+
+    <div id="goal-card" class="goal-card">
+      <div id="goal-view-box" class="goal-view-box" hidden>
+        <div class="goal-view-top">
+          <span>今週の目標</span>
+          <button id="goal-edit-btn" class="goal-edit-btn">編集</button>
+        </div>
+        <p id="goal-memo-text" class="goal-memo-text"></p>
+        <div class="goal-progress-bar-bg">
+          <div id="goal-progress-bar" class="goal-progress-bar-fg"></div>
+        </div>
+        <p id="goal-progress-text" class="goal-progress-text"></p>
+      </div>
+      <div id="goal-edit-box" class="goal-edit-box" hidden>
+        <p>今週の目標時間（分）</p>
+        <input id="goal-minutes-input" type="number" min="0" placeholder="例: 600" />
+        <p>今週やりたいこと（自由に）</p>
+        <input id="goal-memo-input" type="text" placeholder="例: 漢字ドリルを1冊終わらせる" />
+        <button id="goal-save-btn" class="action-btn">目標を保存する</button>
+      </div>
+    </div>
+
+    <div class="tower-area">
+      <div id="tower" class="tower"></div>
+    </div>
+    <p id="total-info" class="total-info">まだ記録がありません</p>
+
+    <div class="subject-select">
+      <button class="subject-btn" data-subject="国語">国語</button>
+      <button class="subject-btn" data-subject="算数">算数</button>
+      <button class="subject-btn" data-subject="理科">理科</button>
+      <button class="subject-btn" data-subject="社会">社会</button>
+    </div>
+
+    <div class="timer-box">
+      <div id="timer-display" class="timer-display">00:00</div>
+      <div class="timer-buttons">
+        <button id="timer-start-btn" class="action-btn">タイマー開始</button>
+        <button id="timer-stop-btn" class="action-btn stop-btn" hidden>記録する</button>
+      </div>
+    </div>
+
+    <div class="manual-box">
+      <p>タイマーを使わず、時間を直接入力してもOK</p>
+      <input id="manual-minutes" type="number" min="1" max="600" placeholder="分" />
+      <button id="manual-record-btn" class="action-btn">この時間で記録する</button>
+    </div>
+
+    <p id="home-message" class="home-message"></p>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="history-screen">きろく</button>
+      <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+    </nav>
+  </section>
+
+  <!-- 記録完了画面 -->
+  <section id="complete-screen" class="screen" hidden>
+    <div class="complete-content">
+      <h2 id="complete-title">お疲れ様！</h2>
+      <p id="complete-message" class="complete-message"></p>
+      <div class="tower-area">
+        <div id="complete-tower" class="tower"></div>
+      </div>
+      <button id="back-home-btn" class="action-btn">ホームにもどる</button>
+    </div>
+  </section>
+
+  <!-- 履歴・カレンダー画面 -->
+  <section id="history-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1>きろく</h1>
+      <div id="streak-badge-history" class="streak-badge">🔥 0日連続</div>
+    </header>
+
+    <h3 class="section-title">1週間の勉強時間くらべ</h3>
+    <div id="weekly-chart" class="weekly-chart"></div>
+
+    <div class="calendar-header">
+      <span id="calendar-title"></span>
+    </div>
+    <p class="calendar-hint">日付をタップすると、その日の記録・予定・メモが見られるよ</p>
+    <div id="calendar" class="calendar"></div>
+
+    <div id="subject-totals" class="subject-totals"></div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn active" data-screen="history-screen">きろく</button>
+      <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+    </nav>
+  </section>
+
+  <!-- 1日の記録・メモ画面 -->
+  <section id="day-detail-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1 id="day-detail-title">8月31日</h1>
+    </header>
+
+    <div id="day-detail-records" class="day-detail-records"></div>
+
+    <div class="note-box">
+      <p>この日の予定</p>
+      <div id="day-events-list" class="day-events-list"></div>
+      <div class="event-add-row">
+        <input id="day-event-input" type="text" placeholder="例: 〇〇模試" />
+        <button id="day-event-add-btn" class="action-btn">追加</button>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <p>この日のひとことメモ</p>
+      <textarea id="day-note-input" rows="4" placeholder="今日がんばったこと、むずかしかったことなど"></textarea>
+      <button id="day-note-save-btn" class="action-btn">メモを保存する</button>
+      <p id="day-note-saved-msg" class="saved-msg"></p>
+    </div>
+
+    <button id="day-detail-back-btn" class="action-btn back-btn">きろくにもどる</button>
+  </section>
+
+  <!-- せいせき画面 -->
+  <section id="grades-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1>せいせき</h1>
+    </header>
+
+    <div class="subject-select">
+      <button class="subject-btn" data-subject="国語">国語</button>
+      <button class="subject-btn" data-subject="算数">算数</button>
+      <button class="subject-btn" data-subject="理科">理科</button>
+      <button class="subject-btn" data-subject="社会">社会</button>
+    </div>
+
+    <div id="grade-chart-box" class="grade-chart-box">
+      <p id="grade-chart-hint" class="grade-chart-hint">教科を選ぶと、点数の変化がグラフで見られるよ</p>
+      <svg id="grade-chart" viewBox="0 0 300 180" class="grade-chart" hidden></svg>
+      <div id="grade-tooltip" class="grade-tooltip" hidden></div>
+    </div>
+
+    <div class="score-form">
+      <p>新しい成績を記録する</p>
+      <div class="score-form-row">
+        <input id="score-date-input" type="date" />
+        <input id="score-value-input" type="number" min="0" max="100" placeholder="点数" />
+        <input id="score-hensachi-input" type="number" min="0" max="100" step="0.1" placeholder="偏差値(任意)" />
+      </div>
+      <textarea id="score-comment-input" rows="2" placeholder="ひとことコメント（任意）"></textarea>
+      <button id="score-save-btn" class="action-btn">記録する</button>
+      <p id="score-save-msg" class="saved-msg"></p>
+    </div>
+
+    <div id="score-list" class="score-list"></div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="history-screen">きろく</button>
+      <button class="nav-btn active" data-screen="grades-screen">せいせき</button>
+    </nav>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
