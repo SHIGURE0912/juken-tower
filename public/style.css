@@ -323,66 +323,103 @@ body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .calendar .weekday {
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: bold;
   color: #999;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
+}
+
+.calendar .weekday-sun {
+  color: #e53935;
+}
+
+.calendar .weekday-sat {
+  color: #4a90e2;
 }
 
 .calendar-day {
-  aspect-ratio: 1;
-  border-radius: 8px;
+  min-height: 62px;
+  border-radius: 10px;
   background: white;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  padding: 4px 3px;
   font-size: 12px;
   border: 1px solid #eee;
   cursor: pointer;
   position: relative;
+  box-sizing: border-box;
 }
 
 .calendar-day.empty {
   background: transparent;
   border: none;
   cursor: default;
+  min-height: 62px;
 }
 
 .calendar-day.today {
   border: 2px solid #6c63ff;
+  background: #f5f4ff;
 }
 
 .calendar-day.has-note::after {
   content: "📝";
   position: absolute;
-  top: 1px;
-  right: 2px;
-  font-size: 8px;
+  top: 2px;
+  right: 3px;
+  font-size: 9px;
 }
 
-.calendar-day.has-event::before {
-  content: "📌";
-  position: absolute;
-  top: 1px;
-  left: 2px;
-  font-size: 8px;
+.day-number {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  align-self: center;
 }
 
-.day-dots {
+.day-number-sun {
+  color: #e53935;
+}
+
+.day-number-sat {
+  color: #4a90e2;
+}
+
+.day-tag-box {
+  width: 100%;
   display: flex;
+  flex-direction: column;
   gap: 2px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-.day-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.day-tag {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 5px;
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-tag-more {
+  background: #ccc;
+}
+
+.day-tag-event {
+  background: #ffa726;
 }
 
 /* 1週間の比較グラフ */
@@ -559,6 +596,28 @@ body {
   padding: 8px 12px;
   margin-bottom: 6px;
   font-size: 14px;
+}
+
+.emoji-picker-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.emoji-pick-btn {
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 10px;
+  font-size: 18px;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.emoji-pick-btn:active {
+  background: #eeecff;
+  border-color: #6c63ff;
 }
 
 .event-add-row {

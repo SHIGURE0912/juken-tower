@@ -424,12 +424,20 @@ function renderCalendar() {
     }
   });
 
+  const eventsByDate = {};
+  events.forEach((e) => {
+    if (!eventsByDate[e.date]) eventsByDate[e.date] = [];
+    eventsByDate[e.date].push(e);
+  });
+
   const calendar = document.getElementById("calendar");
   calendar.innerHTML = "";
 
-  WEEKDAYS.forEach((w) => {
+  WEEKDAYS.forEach((w, i) => {
     const el = document.createElement("div");
     el.className = "weekday";
+    if (i === 0) el.classList.add("weekday-sun");
+    if (i === 6) el.classList.add("weekday-sat");
     el.textContent = w;
     calendar.appendChild(el);
   });
@@ -446,32 +454,52 @@ function renderCalendar() {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = formatDate(new Date(year, month, day));
+    const weekday = new Date(year, month, day).getDay();
     const cell = document.createElement("div");
     cell.className = "calendar-day";
     if (dateStr === todayStr) cell.classList.add("today");
 
     const num = document.createElement("span");
+    num.className = "day-number";
+    if (weekday === 0) num.classList.add("day-number-sun");
+    if (weekday === 6) num.classList.add("day-number-sat");
     num.textContent = day;
     cell.appendChild(num);
 
-    const subjectsToday = recordsByDate[dateStr];
-    if (subjectsToday) {
-      const dots = document.createElement("div");
-      dots.className = "day-dots";
-      subjectsToday.forEach((subject) => {
-        const dot = document.createElement("span");
-        dot.className = "day-dot";
-        dot.style.background = SUBJECT_COLORS[subject];
-        dots.appendChild(dot);
-      });
-      cell.appendChild(dots);
+    const tagBox = document.createElement("div");
+    tagBox.className = "day-tag-box";
+
+    const subjectsToday = recordsByDate[dateStr] || [];
+    subjectsToday.slice(0, 2).forEach((subject) => {
+      const tag = document.createElement("span");
+      tag.className = "day-tag";
+      tag.style.background = SUBJECT_COLORS[subject];
+      tag.textContent = subject;
+      tagBox.appendChild(tag);
+    });
+    if (subjectsToday.length > 2) {
+      const more = document.createElement("span");
+      more.className = "day-tag day-tag-more";
+      more.textContent = `+${subjectsToday.length - 2}`;
+      tagBox.appendChild(more);
     }
+
+    const eventsToday = eventsByDate[dateStr] || [];
+    if (eventsToday.length > 0) {
+      const eventTag = document.createElement("span");
+      eventTag.className = "day-tag day-tag-event";
+      const label =
+        eventsToday.length > 1
+          ? `${eventsToday[0].title} +${eventsToday.length - 1}`
+          : eventsToday[0].title;
+      eventTag.textContent = label;
+      tagBox.appendChild(eventTag);
+    }
+
+    cell.appendChild(tagBox);
 
     if (notes[dateStr]) {
       cell.classList.add("has-note");
-    }
-    if (events.some((e) => e.date === dateStr)) {
-      cell.classList.add("has-event");
     }
 
     cell.addEventListener("click", () => showDayDetail(dateStr));
@@ -1282,6 +1310,13 @@ function setupEvents() {
   document
     .getElementById("day-event-add-btn")
     .addEventListener("click", addDayEvent);
+  document.querySelectorAll(".emoji-pick-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById("day-event-input");
+      input.value = `${btn.dataset.emoji} ${input.value.replace(/^[^\sA-Za-z0-9ぁ-んァ-ヶ一-龠]+\s*/, "")}`;
+      input.focus();
+    });
+  });
   document
     .getElementById("calendar-prev-btn")
     .addEventListener("click", () => changeCalendarMonth(-1));
