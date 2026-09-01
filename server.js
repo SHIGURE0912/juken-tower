@@ -53,7 +53,7 @@ async function generateFriendCode() {
 }
 
 app.set("trust proxy", 1);
-app.use(express.json());
+app.use(express.json({ limit: "2mb" })); // アイコン画像(base64)を受け取れるように上限を広げる
 app.use(
   session({
     secret: SESSION_SECRET,
@@ -233,7 +233,37 @@ app.get("/api/profile", requireAuth, async (req, res) => {
     securityAnswer: user.securityAnswerEncrypted
       ? decryptText(user.securityAnswerEncrypted)
       : null,
+    avatarType: user.avatarType || null,
+    avatarValue: user.avatarValue || null,
   });
+});
+
+const AVATAR_TEMPLATE_IDS = ["1", "2", "3", "4", "5"];
+
+app.post("/api/profile/avatar", requireAuth, async (req, res) => {
+  const { avatarType, avatarValue } = req.body;
+
+  if (avatarType === "template") {
+    if (!AVATAR_TEMPLATE_IDS.includes(avatarValue)) {
+      return res.status(400).json({ error: "テンプレートが正しくありません" });
+    }
+  } else if (avatarType === "custom") {
+    if (
+      typeof avatarValue !== "string" ||
+      !avatarValue.startsWith("data:image/") ||
+      avatarValue.length > 1500000
+    ) {
+      return res.status(400).json({ error: "画像が正しくありません" });
+    }
+  } else {
+    return res.status(400).json({ error: "アイコンの種類が正しくありません" });
+  }
+
+  await db
+    .collection("users")
+    .updateOne({ _id: new ObjectId(req.session.userId) }, { $set: { avatarType, avatarValue } });
+
+  res.json({ avatarType, avatarValue });
 });
 
 // ---------- フレンド機能 ----------
@@ -250,7 +280,12 @@ app.get("/api/friends", requireAuth, async (req, res) => {
     .collection("users")
     .find({ _id: { $in: friendIds.map((id) => new ObjectId(id)) } })
     .toArray();
-  const friends = friendUsers.map((u) => ({ id: u._id.toString(), name: u.name }));
+  const friends = friendUsers.map((u) => ({
+    id: u._id.toString(),
+    name: u.name,
+    avatarType: u.avatarType || null,
+    avatarValue: u.avatarValue || null,
+  }));
 
   const incoming = await db
     .collection("friendRequests")

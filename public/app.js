@@ -13,6 +13,8 @@ let myUserId = null;
 let profile = null;
 let friendsData = { friends: [], incomingRequests: [], outgoingRequests: [] };
 let currentChatFriendId = null;
+let currentChatFriendName = null;
+let currentChatFriendAvatar = { type: null, value: null };
 let chatPollInterval = null;
 let records = [];
 let notes = {};
@@ -903,8 +905,120 @@ async function fetchProfile() {
   profile = await res.json();
 }
 
+function avatarUrl(avatarType, avatarValue) {
+  if (avatarType === "template") return `/avatars/template${avatarValue}.svg`;
+  if (avatarType === "custom") return avatarValue;
+  return null;
+}
+
+function createAvatarElement(avatarType, avatarValue, name, className) {
+  const url = avatarUrl(avatarType, avatarValue);
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.className = className;
+    img.alt = name || "";
+    return img;
+  }
+  const div = document.createElement("div");
+  div.className = className + " avatar-placeholder";
+  div.textContent = (name || "?").charAt(0);
+  return div;
+}
+
+function renderProfileAvatar() {
+  const img = document.getElementById("profile-avatar-img");
+  const placeholder = document.getElementById("profile-avatar-placeholder");
+  const url = avatarUrl(profile.avatarType, profile.avatarValue);
+  if (url) {
+    img.src = url;
+    img.hidden = false;
+    placeholder.hidden = true;
+  } else {
+    img.hidden = true;
+    placeholder.hidden = false;
+    placeholder.textContent = (profile.name || "?").charAt(0);
+  }
+}
+
+function toggleAvatarPicker() {
+  const picker = document.getElementById("avatar-picker");
+  picker.hidden = !picker.hidden;
+  document.getElementById("avatar-message").textContent = "";
+  if (!picker.hidden) {
+    document.querySelectorAll(".avatar-template-option").forEach((imgEl) => {
+      imgEl.classList.toggle(
+        "selected",
+        profile.avatarType === "template" && profile.avatarValue === imgEl.dataset.template
+      );
+    });
+  }
+}
+
+async function saveAvatar(avatarType, avatarValue) {
+  const msg = document.getElementById("avatar-message");
+  const res = await fetch("/api/profile/avatar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ avatarType, avatarValue }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "保存できませんでした";
+    return;
+  }
+  profile.avatarType = data.avatarType;
+  profile.avatarValue = data.avatarValue;
+  renderProfileAvatar();
+  msg.textContent = "アイコンを変えたよ！";
+}
+
+async function selectTemplateAvatar(templateId) {
+  await saveAvatar("template", templateId);
+  document.getElementById("avatar-picker").hidden = true;
+}
+
+function resizeImageFile(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round(height * (maxSize / width));
+            width = maxSize;
+          }
+        } else if (height > maxSize) {
+          width = Math.round(width * (maxSize / height));
+          height = maxSize;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleAvatarUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const dataUrl = await resizeImageFile(file, 200);
+  await saveAvatar("custom", dataUrl);
+  e.target.value = "";
+}
+
 function renderProfile() {
   document.getElementById("profile-name").textContent = profile.name;
+  renderProfileAvatar();
 
   const pinEl = document.getElementById("profile-pin");
   pinEl.textContent = "••••";
@@ -1007,8 +1121,15 @@ function renderFriendsSection() {
     friendsData.friends.forEach((f) => {
       const row = document.createElement("div");
       row.className = "friend-row clickable";
-      row.innerHTML = `<span>💬 ${f.name}</span>`;
-      row.addEventListener("click", () => openChat(f.id, f.name));
+      row.appendChild(createAvatarElement(f.avatarType, f.avatarValue, f.name, "avatar-icon"));
+
+      const label = document.createElement("span");
+      label.textContent = `💬 ${f.name}`;
+      row.appendChild(label);
+
+      row.addEventListener("click", () =>
+        openChat(f.id, f.name, f.avatarType, f.avatarValue)
+      );
       friendsList.appendChild(row);
     });
   }
@@ -1047,8 +1168,10 @@ async function sendFriendRequest() {
 
 // ---------- チャット ----------
 
-async function openChat(friendId, friendName) {
+async function openChat(friendId, friendName, avatarType, avatarValue) {
   currentChatFriendId = friendId;
+  currentChatFriendName = friendName;
+  currentChatFriendAvatar = { type: avatarType, value: avatarValue };
   document.getElementById("chat-friend-name").textContent = friendName;
   await loadMessages();
   switchScreen("chat-screen");
@@ -1076,11 +1199,22 @@ function renderMessages(messages) {
   const container = document.getElementById("chat-messages");
   container.innerHTML = "";
   messages.forEach((m) => {
-    const bubble = document.createElement("div");
     const isMe = m.fromUserId === myUserId;
+
+    const row = document.createElement("div");
+    row.className = "chat-message-row " + (isMe ? "chat-message-me" : "chat-message-other");
+
+    const avatarType = isMe ? profile.avatarType : currentChatFriendAvatar.type;
+    const avatarValue = isMe ? profile.avatarValue : currentChatFriendAvatar.value;
+    const avatarName = isMe ? currentUserName : currentChatFriendName;
+    row.appendChild(createAvatarElement(avatarType, avatarValue, avatarName, "avatar-icon"));
+
+    const bubble = document.createElement("div");
     bubble.className = "chat-bubble " + (isMe ? "chat-bubble-me" : "chat-bubble-other");
     bubble.textContent = m.text;
-    container.appendChild(bubble);
+    row.appendChild(bubble);
+
+    container.appendChild(row);
   });
   container.scrollTop = container.scrollHeight;
 }
@@ -1186,6 +1320,22 @@ function setupEvents() {
     .getElementById("friend-request-btn")
     .addEventListener("click", sendFriendRequest);
   document.getElementById("chat-back-btn").addEventListener("click", closeChat);
+
+  document
+    .getElementById("avatar-change-btn")
+    .addEventListener("click", toggleAvatarPicker);
+  document
+    .getElementById("avatar-picker-close-btn")
+    .addEventListener("click", () => {
+      document.getElementById("avatar-picker").hidden = true;
+    });
+  document.querySelectorAll(".avatar-template-option").forEach((imgEl) => {
+    imgEl.addEventListener("click", () => selectTemplateAvatar(imgEl.dataset.template));
+  });
+  document
+    .getElementById("avatar-upload-input")
+    .addEventListener("change", handleAvatarUpload);
+
   document
     .getElementById("chat-send-btn")
     .addEventListener("click", sendChatMessage);

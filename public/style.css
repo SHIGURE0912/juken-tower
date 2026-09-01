@@ -1072,14 +1072,12 @@ body {
 }
 
 .chat-bubble-me {
-  align-self: flex-end;
   background: #6c63ff;
   color: white;
   border-bottom-right-radius: 4px;
 }
 
 .chat-bubble-other {
-  align-self: flex-start;
   background: white;
   color: #333;
   border-bottom-left-radius: 4px;
@@ -1114,4 +1112,115 @@ body {
   padding: 8px 18px;
   margin-bottom: 0;
   width: auto;
+}
+
+/* アイコン */
+.avatar-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.avatar-current {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 8px;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #6c63ff;
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.avatar-placeholder[hidden] {
+  display: none;
+}
+
+.avatar-change-btn {
+  width: auto;
+  padding: 8px 18px;
+  font-size: 13px;
+}
+
+.avatar-picker {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.avatar-picker p {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 8px;
+}
+
+.avatar-template-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.avatar-template-option {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  object-fit: cover;
+}
+
+.avatar-template-option.selected {
+  border-color: #6c63ff;
+}
+
+.avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #6c63ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.friend-row .avatar-icon {
+  margin-right: 4px;
+}
+
+/* チャットのアイコン付き吹き出し */
+.chat-message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 85%;
+}
+
+.chat-message-row.chat-message-me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-message-row.chat-message-other {
+  align-self: flex-start;
 }

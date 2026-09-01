@@ -301,6 +301,27 @@
       <h1>マイページ</h1>
     </header>
 
+    <div class="avatar-card">
+      <img id="profile-avatar-img" class="avatar-current" src="" alt="アイコン" hidden />
+      <div id="profile-avatar-placeholder" class="avatar-current avatar-placeholder"></div>
+      <button id="avatar-change-btn" class="action-btn avatar-change-btn">アイコンを変える</button>
+    </div>
+
+    <div id="avatar-picker" class="avatar-picker" hidden>
+      <p>テンプレートから選ぶ</p>
+      <div class="avatar-template-row">
+        <img class="avatar-template-option" data-template="1" src="/avatars/template1.svg" />
+        <img class="avatar-template-option" data-template="2" src="/avatars/template2.svg" />
+        <img class="avatar-template-option" data-template="3" src="/avatars/template3.svg" />
+        <img class="avatar-template-option" data-template="4" src="/avatars/template4.svg" />
+        <img class="avatar-template-option" data-template="5" src="/avatars/template5.svg" />
+      </div>
+      <p>じぶんの画像をアップロード</p>
+      <input id="avatar-upload-input" type="file" accept="image/*" />
+      <button id="avatar-picker-close-btn" class="link-btn">閉じる</button>
+      <p id="avatar-message" class="saved-msg"></p>
+    </div>
+
     <div class="profile-card">
       <div class="profile-row">
         <span class="profile-label">名前</span>
