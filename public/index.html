@@ -25,10 +25,78 @@
       />
 
       <button id="login-btn" class="action-btn">ログイン</button>
-      <button id="register-btn" class="action-btn secondary-btn">
+      <button id="go-register-btn" class="action-btn secondary-btn">
         はじめての人はこちら（新しく登録する）
       </button>
+      <button id="go-reset-btn" class="link-btn">暗証番号を忘れた場合はこちら</button>
       <p id="login-message" class="home-message"></p>
+    </div>
+  </section>
+
+  <!-- 新規登録画面 -->
+  <section id="register-screen" class="screen" hidden>
+    <div class="login-box">
+      <h1 class="login-title">はじめまして</h1>
+      <p class="login-subtitle">名前・暗証番号・秘密の質問を決めよう</p>
+
+      <input id="register-name-input" type="text" placeholder="名前" autocomplete="username" />
+      <input
+        id="register-pin-input"
+        type="password"
+        inputmode="numeric"
+        maxlength="4"
+        placeholder="暗証番号（4桁の数字）"
+        autocomplete="new-password"
+      />
+
+      <select id="register-question-select">
+        <option value="好きな食べ物は？">好きな食べ物は？</option>
+        <option value="好きな動物は？">好きな動物は？</option>
+        <option value="生まれた季節は？">生まれた季節は？</option>
+        <option value="好きな色は？">好きな色は？</option>
+      </select>
+      <input
+        id="register-answer-input"
+        type="text"
+        placeholder="質問の答え（暗証番号を忘れたときに使うよ）"
+      />
+
+      <button id="register-btn" class="action-btn">登録する</button>
+      <button id="back-to-login-from-register-btn" class="link-btn">
+        ログイン画面にもどる
+      </button>
+      <p id="register-message" class="home-message"></p>
+    </div>
+  </section>
+
+  <!-- 暗証番号を忘れた場合の画面 -->
+  <section id="reset-screen" class="screen" hidden>
+    <div class="login-box">
+      <h1 class="login-title">暗証番号の再設定</h1>
+
+      <div id="reset-step1">
+        <p class="login-subtitle">まず、名前を入力してね</p>
+        <input id="reset-name-input" type="text" placeholder="名前" />
+        <button id="reset-find-btn" class="action-btn">次へ</button>
+      </div>
+
+      <div id="reset-step2" hidden>
+        <p id="reset-question-text" class="login-subtitle"></p>
+        <input id="reset-answer-input" type="text" placeholder="質問の答え" />
+        <input
+          id="reset-newpin-input"
+          type="password"
+          inputmode="numeric"
+          maxlength="4"
+          placeholder="新しい暗証番号（4桁）"
+        />
+        <button id="reset-submit-btn" class="action-btn">再設定する</button>
+      </div>
+
+      <button id="back-to-login-from-reset-btn" class="link-btn">
+        ログイン画面にもどる
+      </button>
+      <p id="reset-message" class="home-message"></p>
     </div>
   </section>
 

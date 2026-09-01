@@ -885,7 +885,8 @@ body {
   margin: 0 0 20px;
 }
 
-.login-box input {
+.login-box input,
+.login-box select {
   width: 100%;
   border: 2px solid #ddd;
   border-radius: 10px;
@@ -894,6 +895,7 @@ body {
   margin-bottom: 10px;
   box-sizing: border-box;
   text-align: center;
+  font-family: inherit;
 }
 
 .login-box .action-btn {
@@ -904,4 +906,17 @@ body {
 .secondary-btn {
   background: #eeecff;
   color: #6c63ff;
+}
+
+.link-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  color: #999;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px;
+  margin-bottom: 6px;
 }

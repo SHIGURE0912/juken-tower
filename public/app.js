@@ -968,6 +968,25 @@ function setupEvents() {
     .getElementById("logout-btn")
     .addEventListener("click", handleLogout);
 
+  document
+    .getElementById("go-register-btn")
+    .addEventListener("click", () => switchScreen("register-screen"));
+  document
+    .getElementById("go-reset-btn")
+    .addEventListener("click", () => switchScreen("reset-screen"));
+  document
+    .getElementById("back-to-login-from-register-btn")
+    .addEventListener("click", () => switchScreen("login-screen"));
+  document
+    .getElementById("back-to-login-from-reset-btn")
+    .addEventListener("click", () => switchScreen("login-screen"));
+  document
+    .getElementById("reset-find-btn")
+    .addEventListener("click", handleResetFind);
+  document
+    .getElementById("reset-submit-btn")
+    .addEventListener("click", handleResetSubmit);
+
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
   });
@@ -1000,14 +1019,16 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-  const name = document.getElementById("login-name-input").value;
-  const pin = document.getElementById("login-pin-input").value;
-  const msg = document.getElementById("login-message");
+  const name = document.getElementById("register-name-input").value;
+  const pin = document.getElementById("register-pin-input").value;
+  const securityQuestion = document.getElementById("register-question-select").value;
+  const securityAnswer = document.getElementById("register-answer-input").value;
+  const msg = document.getElementById("register-message");
 
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, pin }),
+    body: JSON.stringify({ name, pin, securityQuestion, securityAnswer }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -1021,6 +1042,55 @@ async function handleRegister() {
 async function handleLogout() {
   await fetch("/api/auth/logout", { method: "POST" });
   location.reload();
+}
+
+// ---------- 暗証番号の再設定 ----------
+
+let resetTargetName = null;
+
+async function handleResetFind() {
+  const name = document.getElementById("reset-name-input").value;
+  const msg = document.getElementById("reset-message");
+
+  const res = await fetch(`/api/auth/security-question?name=${encodeURIComponent(name)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "見つかりませんでした";
+    return;
+  }
+
+  resetTargetName = name.trim();
+  msg.textContent = "";
+  document.getElementById("reset-question-text").textContent = data.question;
+  document.getElementById("reset-step1").hidden = true;
+  document.getElementById("reset-step2").hidden = false;
+}
+
+async function handleResetSubmit() {
+  const securityAnswer = document.getElementById("reset-answer-input").value;
+  const newPin = document.getElementById("reset-newpin-input").value;
+  const msg = document.getElementById("reset-message");
+
+  const res = await fetch("/api/auth/reset-pin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: resetTargetName, securityAnswer, newPin }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "再設定できませんでした";
+    return;
+  }
+
+  msg.textContent = "";
+  document.getElementById("reset-step1").hidden = false;
+  document.getElementById("reset-step2").hidden = true;
+  document.getElementById("reset-name-input").value = "";
+  document.getElementById("reset-answer-input").value = "";
+  document.getElementById("reset-newpin-input").value = "";
+  document.getElementById("login-message").textContent =
+    "暗証番号を再設定したよ。新しい番号でログインしてね";
+  switchScreen("login-screen");
 }
 
 async function enterApp(name) {

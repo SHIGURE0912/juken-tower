@@ -55,14 +55,25 @@ function requireAuth(req, res, next) {
 
 // ---------- ログイン・新規登録 ----------
 
+// 秘密の質問の答えは、表記ゆれ（大文字小文字・前後の空白）を気にしないよう正規化する
+function normalizeAnswer(text) {
+  return text.trim().toLowerCase();
+}
+
 app.post("/api/auth/register", async (req, res) => {
-  const { name, pin } = req.body;
+  const { name, pin, securityQuestion, securityAnswer } = req.body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return res.status(400).json({ error: "名前を入力してね" });
   }
   if (typeof pin !== "string" || !/^\d{4}$/.test(pin)) {
     return res.status(400).json({ error: "暗証番号は4桁の数字で入力してね" });
+  }
+  if (typeof securityQuestion !== "string" || securityQuestion.trim() === "") {
+    return res.status(400).json({ error: "秘密の質問を選んでね" });
+  }
+  if (typeof securityAnswer !== "string" || securityAnswer.trim() === "") {
+    return res.status(400).json({ error: "秘密の質問の答えを入力してね" });
   }
 
   const trimmedName = name.trim();
@@ -72,7 +83,13 @@ app.post("/api/auth/register", async (req, res) => {
   }
 
   const pinHash = await bcrypt.hash(pin, 10);
-  const result = await db.collection("users").insertOne({ name: trimmedName, pinHash });
+  const securityAnswerHash = await bcrypt.hash(normalizeAnswer(securityAnswer), 10);
+  const result = await db.collection("users").insertOne({
+    name: trimmedName,
+    pinHash,
+    securityQuestion: securityQuestion.trim(),
+    securityAnswerHash,
+  });
 
   req.session.userId = result.insertedId.toString();
   req.session.userName = trimmedName;
@@ -98,6 +115,46 @@ app.post("/api/auth/login", async (req, res) => {
   req.session.userId = user._id.toString();
   req.session.userName = user.name;
   res.json({ name: user.name });
+});
+
+app.get("/api/auth/security-question", async (req, res) => {
+  const name = typeof req.query.name === "string" ? req.query.name.trim() : "";
+  if (!name) {
+    return res.status(400).json({ error: "名前を入力してね" });
+  }
+
+  const user = await db.collection("users").findOne({ name });
+  if (!user || !user.securityQuestion) {
+    return res.status(400).json({ error: "その名前は見つかりませんでした" });
+  }
+  res.json({ question: user.securityQuestion });
+});
+
+app.post("/api/auth/reset-pin", async (req, res) => {
+  const { name, securityAnswer, newPin } = req.body;
+
+  if (typeof name !== "string" || name.trim() === "") {
+    return res.status(400).json({ error: "名前を入力してね" });
+  }
+  if (typeof securityAnswer !== "string" || securityAnswer.trim() === "") {
+    return res.status(400).json({ error: "答えを入力してね" });
+  }
+  if (typeof newPin !== "string" || !/^\d{4}$/.test(newPin)) {
+    return res.status(400).json({ error: "新しい暗証番号は4桁の数字で入力してね" });
+  }
+
+  const user = await db.collection("users").findOne({ name: name.trim() });
+  if (!user || !user.securityAnswerHash) {
+    return res.status(400).json({ error: "名前か答えがちがいます" });
+  }
+  const ok = await bcrypt.compare(normalizeAnswer(securityAnswer), user.securityAnswerHash);
+  if (!ok) {
+    return res.status(400).json({ error: "名前か答えがちがいます" });
+  }
+
+  const newPinHash = await bcrypt.hash(newPin, 10);
+  await db.collection("users").updateOne({ _id: user._id }, { $set: { pinHash: newPinHash } });
+  res.json({ ok: true });
 });
 
 app.post("/api/auth/logout", (req, res) => {
