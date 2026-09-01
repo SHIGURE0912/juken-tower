@@ -906,7 +906,7 @@ async function fetchProfile() {
 }
 
 function avatarUrl(avatarType, avatarValue) {
-  if (avatarType === "template") return `/avatars/template${avatarValue}.svg`;
+  if (avatarType === "template") return `/avatars/template${avatarValue}.png`;
   if (avatarType === "custom") return avatarValue;
   return null;
 }
