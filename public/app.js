@@ -39,6 +39,7 @@ let events = [];
 let scores = [];
 let selectedSubject = null;
 let selectedGradeSubject = null;
+let gradeChartMode = "score";
 let timerSeconds = 0;
 let timerInterval = null;
 let detailDate = null;
@@ -856,7 +857,12 @@ function selectGradeSubject(subject) {
   renderGradesScreen();
 }
 
-function renderGradeChart(subjectScores) {
+function setGradeChartMode(mode) {
+  gradeChartMode = mode;
+  renderGradesScreen();
+}
+
+function renderGradeChart(subjectScores, mode) {
   const svg = document.getElementById("grade-chart");
   const hint = document.getElementById("grade-chart-hint");
   const tooltip = document.getElementById("grade-tooltip");
@@ -869,21 +875,50 @@ function renderGradeChart(subjectScores) {
     hint.textContent = "まだ記録がありません。下のフォームから記録してみよう";
     return;
   }
+
+  const getValue = (s) => (mode === "hensachi" ? s.hensachi : s.score);
+  const plottable =
+    mode === "hensachi"
+      ? subjectScores.filter((s) => s.hensachi !== null && s.hensachi !== undefined)
+      : subjectScores;
+
+  if (plottable.length === 0) {
+    svg.hidden = true;
+    hint.hidden = false;
+    hint.textContent = "偏差値が記録された成績がまだないよ";
+    return;
+  }
+
   hint.hidden = true;
   svg.hidden = false;
 
   const PAD_SIDE = 24;
-  const PAD_TOP = 16;
+  const PAD_TOP = 26;
   const PAD_BOTTOM = 34;
   const W = 300;
   const H = 180;
-  const n = subjectScores.length;
+  const n = plottable.length;
   const xStep = n > 1 ? (W - PAD_SIDE * 2) / (n - 1) : 0;
-  const color = SUBJECT_COLORS[subjectScores[0].subject];
+  const color = SUBJECT_COLORS[plottable[0].subject];
   const svgNS = "http://www.w3.org/2000/svg";
   const plotHeight = H - PAD_TOP - PAD_BOTTOM;
 
-  const yForScore = (score) => PAD_TOP + plotHeight - (score / 100) * plotHeight;
+  let minV = 0;
+  let maxV = 100;
+  if (mode === "hensachi") {
+    const values = plottable.map(getValue);
+    minV = Math.min(...values);
+    maxV = Math.max(...values);
+    if (minV === maxV) {
+      minV -= 5;
+      maxV += 5;
+    }
+    const pad = (maxV - minV) * 0.2;
+    minV -= pad;
+    maxV += pad;
+  }
+
+  const yForValue = (v) => PAD_TOP + plotHeight - ((v - minV) / (maxV - minV)) * plotHeight;
 
   const axis = document.createElementNS(svgNS, "line");
   axis.setAttribute("x1", PAD_SIDE);
@@ -893,9 +928,9 @@ function renderGradeChart(subjectScores) {
   axis.setAttribute("stroke", "#ddd");
   svg.appendChild(axis);
 
-  const points = subjectScores.map((s, i) => {
+  const points = plottable.map((s, i) => {
     const x = PAD_SIDE + (n > 1 ? i * xStep : (W - PAD_SIDE * 2) / 2);
-    const y = yForScore(s.score);
+    const y = yForValue(getValue(s));
     return { x, y, s };
   });
 
@@ -908,7 +943,8 @@ function renderGradeChart(subjectScores) {
     svg.appendChild(polyline);
   }
 
-  points.forEach((p) => {
+  let runningMax = -Infinity;
+  points.forEach((p, i) => {
     const d = new Date(p.s.date + "T00:00:00");
     const dateLabel = document.createElementNS(svgNS, "text");
     dateLabel.setAttribute("x", p.x);
@@ -918,6 +954,37 @@ function renderGradeChart(subjectScores) {
     dateLabel.setAttribute("fill", "#999");
     dateLabel.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
     svg.appendChild(dateLabel);
+
+    const value = getValue(p.s);
+    const prevValue = i > 0 ? getValue(points[i - 1].s) : null;
+
+    let badgeText = null;
+    let badgeColor = null;
+    if (i > 0) {
+      if (value > runningMax) {
+        badgeText = "自己ベスト更新!!";
+        badgeColor = "#e8960c";
+      } else if (prevValue !== null && value > prevValue) {
+        const diff = Math.round((value - prevValue) * 10) / 10;
+        const unit = mode === "hensachi" ? "" : "点";
+        badgeText = `+${diff}${unit}UP!!`;
+        badgeColor = "#43a047";
+      }
+    }
+    if (value > runningMax) runningMax = value;
+
+    if (badgeText) {
+      const badgeY = Math.max(10, p.y - 12);
+      const badge = document.createElementNS(svgNS, "text");
+      badge.setAttribute("x", p.x);
+      badge.setAttribute("y", badgeY);
+      badge.setAttribute("text-anchor", "middle");
+      badge.setAttribute("font-size", "7.5");
+      badge.setAttribute("font-weight", "bold");
+      badge.setAttribute("fill", badgeColor);
+      badge.textContent = badgeText;
+      svg.appendChild(badge);
+    }
 
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", p.x);
@@ -1020,6 +1087,13 @@ function renderGradesScreen() {
     btn.classList.toggle("selected", btn.dataset.subject === selectedGradeSubject);
   });
 
+  document
+    .getElementById("chart-mode-score-btn")
+    .classList.toggle("selected", gradeChartMode === "score");
+  document
+    .getElementById("chart-mode-hensachi-btn")
+    .classList.toggle("selected", gradeChartMode === "hensachi");
+
   const dateInput = document.getElementById("score-date-input");
   if (!dateInput.value) {
     dateInput.value = formatDate(new Date());
@@ -1038,7 +1112,7 @@ function renderGradesScreen() {
     .filter((s) => s.subject === selectedGradeSubject)
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-  renderGradeChart(subjectScores);
+  renderGradeChart(subjectScores, gradeChartMode);
   renderScoreList(subjectScores);
 }
 
@@ -1492,6 +1566,12 @@ function setupEvents() {
   document
     .getElementById("score-save-btn")
     .addEventListener("click", recordScore);
+  document
+    .getElementById("chart-mode-score-btn")
+    .addEventListener("click", () => setGradeChartMode("score"));
+  document
+    .getElementById("chart-mode-hensachi-btn")
+    .addEventListener("click", () => setGradeChartMode("hensachi"));
 
   document.getElementById("login-btn").addEventListener("click", handleLogin);
   document
