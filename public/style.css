@@ -920,3 +920,198 @@ body {
   padding: 4px;
   margin-bottom: 6px;
 }
+
+/* マイページ */
+.profile-card {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 8px;
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.profile-label {
+  font-size: 13px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.profile-value {
+  flex: 1;
+  text-align: right;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.reveal-btn {
+  border: none;
+  background: #eeecff;
+  color: #6c63ff;
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.friend-code-card {
+  width: 100%;
+  background: linear-gradient(135deg, #6c63ff, #8f88ff);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  text-align: center;
+  color: white;
+}
+
+.friend-code-card p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.friend-code-display {
+  font-size: 30px;
+  font-weight: bold;
+  letter-spacing: 4px;
+}
+
+.friend-code-hint {
+  font-size: 11px;
+  margin-top: 6px !important;
+  opacity: 0.85;
+}
+
+.friend-add-card {
+  width: 100%;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.friend-add-card p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #faf9ff;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.friend-row.clickable {
+  cursor: pointer;
+}
+
+.friend-row.clickable:active {
+  background: #eeecff;
+}
+
+.small-inline-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.accept-btn {
+  background: #6c63ff;
+  color: white;
+}
+
+.pending-label {
+  font-size: 11px;
+  color: #aaa;
+}
+
+/* チャット */
+.chat-messages {
+  width: 100%;
+  max-width: 480px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 70px;
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.chat-bubble-me {
+  align-self: flex-end;
+  background: #6c63ff;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-other {
+  align-self: flex-start;
+  background: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.chat-input-row {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  background: white;
+  padding: 10px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.chat-input-row input {
+  flex: 1;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.chat-input-row .action-btn {
+  padding: 8px 18px;
+  margin-bottom: 0;
+  width: auto;
+}

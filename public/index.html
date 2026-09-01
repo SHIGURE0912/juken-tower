@@ -183,6 +183,7 @@
       <button class="nav-btn active" data-screen="home-screen">ホーム</button>
       <button class="nav-btn" data-screen="history-screen">きろく</button>
       <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+      <button class="nav-btn" data-screen="profile-screen">マイページ</button>
     </nav>
   </section>
 
@@ -222,6 +223,7 @@
       <button class="nav-btn" data-screen="home-screen">ホーム</button>
       <button class="nav-btn active" data-screen="history-screen">きろく</button>
       <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+      <button class="nav-btn" data-screen="profile-screen">マイページ</button>
     </nav>
   </section>
 
@@ -289,7 +291,90 @@
       <button class="nav-btn" data-screen="home-screen">ホーム</button>
       <button class="nav-btn" data-screen="history-screen">きろく</button>
       <button class="nav-btn active" data-screen="grades-screen">せいせき</button>
+      <button class="nav-btn" data-screen="profile-screen">マイページ</button>
     </nav>
+  </section>
+
+  <!-- マイページ画面 -->
+  <section id="profile-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1>マイページ</h1>
+    </header>
+
+    <div class="profile-card">
+      <div class="profile-row">
+        <span class="profile-label">名前</span>
+        <span id="profile-name" class="profile-value"></span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">暗証番号</span>
+        <span id="profile-pin" class="profile-value">••••</span>
+        <button class="reveal-btn" data-target="profile-pin">表示</button>
+      </div>
+      <div class="profile-row">
+        <span id="profile-question-label" class="profile-label">秘密の質問</span>
+        <span id="profile-answer" class="profile-value">••••</span>
+        <button class="reveal-btn" data-target="profile-answer">表示</button>
+      </div>
+    </div>
+
+    <div class="friend-code-card">
+      <p>あなたのフレンドコード</p>
+      <div id="profile-friend-code" class="friend-code-display"></div>
+      <p class="friend-code-hint">このコードを友達や家族に伝えると、つながれるよ</p>
+    </div>
+
+    <div class="friend-add-card">
+      <p>フレンドを追加する</p>
+      <div class="event-add-row">
+        <input
+          id="friend-code-input"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="相手のフレンドコード（6桁）"
+        />
+        <button id="friend-request-btn" class="action-btn">申請する</button>
+      </div>
+      <p id="friend-request-msg" class="saved-msg"></p>
+    </div>
+
+    <div id="incoming-requests-card" class="friend-add-card" hidden>
+      <p>届いている申請</p>
+      <div id="incoming-requests-list"></div>
+    </div>
+
+    <div id="outgoing-requests-card" class="friend-add-card" hidden>
+      <p>申請中（返事待ち）</p>
+      <div id="outgoing-requests-list"></div>
+    </div>
+
+    <div class="friend-add-card">
+      <p>フレンド一覧</p>
+      <div id="friends-list"></div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="history-screen">きろく</button>
+      <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+      <button class="nav-btn active" data-screen="profile-screen">マイページ</button>
+    </nav>
+  </section>
+
+  <!-- チャット画面 -->
+  <section id="chat-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1 id="chat-friend-name">チャット</h1>
+      <button id="chat-back-btn" class="logout-btn">もどる</button>
+    </header>
+
+    <div id="chat-messages" class="chat-messages"></div>
+
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="メッセージを入力" autocomplete="off" />
+      <button id="chat-send-btn" class="action-btn">送信</button>
+    </div>
   </section>
 
   <script src="app.js"></script>

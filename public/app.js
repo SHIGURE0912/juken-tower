@@ -9,6 +9,11 @@ const SUBJECT_COLORS = {
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 let currentUserName = null;
+let myUserId = null;
+let profile = null;
+let friendsData = { friends: [], incomingRequests: [], outgoingRequests: [] };
+let currentChatFriendId = null;
+let chatPollInterval = null;
 let records = [];
 let notes = {};
 let goal = { minutesTarget: 0, memo: "" };
@@ -891,6 +896,211 @@ async function recordScore() {
   }
 }
 
+// ---------- マイページ ----------
+
+async function fetchProfile() {
+  const res = await fetch("/api/profile");
+  profile = await res.json();
+}
+
+function renderProfile() {
+  document.getElementById("profile-name").textContent = profile.name;
+
+  const pinEl = document.getElementById("profile-pin");
+  pinEl.textContent = "••••";
+  pinEl.dataset.value = profile.pin;
+  pinEl.dataset.revealed = "false";
+
+  document.getElementById("profile-question-label").textContent =
+    profile.securityQuestion || "秘密の質問";
+  const answerEl = document.getElementById("profile-answer");
+  answerEl.textContent = "••••";
+  answerEl.dataset.value = profile.securityAnswer;
+  answerEl.dataset.revealed = "false";
+
+  document.getElementById("profile-friend-code").textContent = profile.friendCode;
+
+  document.querySelectorAll(".reveal-btn").forEach((btn) => {
+    btn.textContent = "表示";
+  });
+}
+
+function toggleReveal(targetId) {
+  const el = document.getElementById(targetId);
+  const btn = document.querySelector(`.reveal-btn[data-target="${targetId}"]`);
+  const revealed = el.dataset.revealed === "true";
+
+  if (revealed) {
+    el.textContent = "••••";
+    el.dataset.revealed = "false";
+    btn.textContent = "表示";
+  } else {
+    el.textContent = el.dataset.value;
+    el.dataset.revealed = "true";
+    btn.textContent = "隠す";
+  }
+}
+
+async function fetchFriendsData() {
+  const res = await fetch("/api/friends");
+  friendsData = await res.json();
+}
+
+function renderFriendsSection() {
+  const incomingCard = document.getElementById("incoming-requests-card");
+  const incomingList = document.getElementById("incoming-requests-list");
+  incomingList.innerHTML = "";
+  incomingCard.hidden = friendsData.incomingRequests.length === 0;
+  friendsData.incomingRequests.forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "friend-row";
+
+    const label = document.createElement("span");
+    label.textContent = r.fromName;
+    row.appendChild(label);
+
+    const acceptBtn = document.createElement("button");
+    acceptBtn.className = "small-inline-btn accept-btn";
+    acceptBtn.textContent = "承認";
+    acceptBtn.addEventListener("click", async () => {
+      await fetch("/api/friends/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: r.id }),
+      });
+      await refreshFriendsSection();
+    });
+    row.appendChild(acceptBtn);
+
+    const rejectBtn = document.createElement("button");
+    rejectBtn.className = "small-delete-btn";
+    rejectBtn.textContent = "拒否";
+    rejectBtn.addEventListener("click", async () => {
+      await fetch("/api/friends/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: r.id }),
+      });
+      await refreshFriendsSection();
+    });
+    row.appendChild(rejectBtn);
+
+    incomingList.appendChild(row);
+  });
+
+  const outgoingCard = document.getElementById("outgoing-requests-card");
+  const outgoingList = document.getElementById("outgoing-requests-list");
+  outgoingList.innerHTML = "";
+  outgoingCard.hidden = friendsData.outgoingRequests.length === 0;
+  friendsData.outgoingRequests.forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "friend-row";
+    row.innerHTML = `<span>${r.toName}</span><span class="pending-label">返事待ち</span>`;
+    outgoingList.appendChild(row);
+  });
+
+  const friendsList = document.getElementById("friends-list");
+  friendsList.innerHTML = "";
+  if (friendsData.friends.length === 0) {
+    friendsList.innerHTML = `<p class="no-record-text">まだフレンドがいません</p>`;
+  } else {
+    friendsData.friends.forEach((f) => {
+      const row = document.createElement("div");
+      row.className = "friend-row clickable";
+      row.innerHTML = `<span>💬 ${f.name}</span>`;
+      row.addEventListener("click", () => openChat(f.id, f.name));
+      friendsList.appendChild(row);
+    });
+  }
+}
+
+async function refreshFriendsSection() {
+  await fetchFriendsData();
+  renderFriendsSection();
+}
+
+async function renderProfileScreen() {
+  await Promise.all([fetchProfile(), fetchFriendsData()]);
+  renderProfile();
+  renderFriendsSection();
+}
+
+async function sendFriendRequest() {
+  const input = document.getElementById("friend-code-input");
+  const msg = document.getElementById("friend-request-msg");
+
+  const res = await fetch("/api/friends/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ friendCode: input.value.trim() }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "申請できませんでした";
+    return;
+  }
+
+  msg.textContent = "申請を送ったよ！";
+  input.value = "";
+  await refreshFriendsSection();
+}
+
+// ---------- チャット ----------
+
+async function openChat(friendId, friendName) {
+  currentChatFriendId = friendId;
+  document.getElementById("chat-friend-name").textContent = friendName;
+  await loadMessages();
+  switchScreen("chat-screen");
+
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(loadMessages, 3000);
+}
+
+function closeChat() {
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = null;
+  currentChatFriendId = null;
+  switchScreen("profile-screen");
+}
+
+async function loadMessages() {
+  if (!currentChatFriendId) return;
+  const res = await fetch(`/api/messages/${currentChatFriendId}`);
+  if (!res.ok) return;
+  const messages = await res.json();
+  renderMessages(messages);
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById("chat-messages");
+  container.innerHTML = "";
+  messages.forEach((m) => {
+    const bubble = document.createElement("div");
+    const isMe = m.fromUserId === myUserId;
+    bubble.className = "chat-bubble " + (isMe ? "chat-bubble-me" : "chat-bubble-other");
+    bubble.textContent = m.text;
+    container.appendChild(bubble);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text || !currentChatFriendId) return;
+
+  input.value = "";
+  const res = await fetch(`/api/messages/${currentChatFriendId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (res.ok) {
+    await loadMessages();
+  }
+}
+
 // ---------- 画面切り替え ----------
 
 function switchScreen(screenId) {
@@ -904,6 +1114,7 @@ function switchScreen(screenId) {
   if (screenId === "home-screen") renderHome();
   if (screenId === "history-screen") renderHistory();
   if (screenId === "grades-screen") renderGradesScreen();
+  if (screenId === "profile-screen") renderProfileScreen();
 }
 
 // ---------- 初期化 ----------
@@ -968,6 +1179,20 @@ function setupEvents() {
     .getElementById("logout-btn")
     .addEventListener("click", handleLogout);
 
+  document.querySelectorAll(".reveal-btn").forEach((btn) => {
+    btn.addEventListener("click", () => toggleReveal(btn.dataset.target));
+  });
+  document
+    .getElementById("friend-request-btn")
+    .addEventListener("click", sendFriendRequest);
+  document.getElementById("chat-back-btn").addEventListener("click", closeChat);
+  document
+    .getElementById("chat-send-btn")
+    .addEventListener("click", sendChatMessage);
+  document.getElementById("chat-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendChatMessage();
+  });
+
   document
     .getElementById("go-register-btn")
     .addEventListener("click", () => switchScreen("register-screen"));
@@ -1015,7 +1240,7 @@ async function handleLogin() {
     return;
   }
   msg.textContent = "";
-  await enterApp(data.name);
+  await enterApp(data.name, data.id);
 }
 
 async function handleRegister() {
@@ -1036,7 +1261,7 @@ async function handleRegister() {
     return;
   }
   msg.textContent = "";
-  await enterApp(data.name);
+  await enterApp(data.name, data.id);
 }
 
 async function handleLogout() {
@@ -1093,8 +1318,9 @@ async function handleResetSubmit() {
   switchScreen("login-screen");
 }
 
-async function enterApp(name) {
+async function enterApp(name, id) {
   currentUserName = name;
+  myUserId = id;
   document.getElementById("welcome-text").textContent = `ようこそ、${name}さん`;
   await Promise.all([
     fetchRecords(),
@@ -1111,7 +1337,7 @@ async function init() {
   setupEvents();
   const me = await fetchMe();
   if (me.loggedIn) {
-    await enterApp(me.name);
+    await enterApp(me.name, me.id);
   }
 }
 

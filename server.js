@@ -4,6 +4,7 @@
 const express = require("express");
 const session = require("express-session");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { MongoClient, ObjectId } = require("mongodb");
 const path = require("path");
 
@@ -12,9 +13,44 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/juken-tower";
 const SESSION_SECRET = process.env.SESSION_SECRET || "juken-tower-himitsu-key";
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || "juken-tower-encryption-key";
 const SUBJECTS = ["国語", "算数", "理科", "社会"];
 
 let db;
+
+// マイページで本人にPIN・秘密の質問の答えを見せるための、元に戻せる暗号化
+// (ログインの本人確認は今まで通りbcryptのハッシュ比較で行う)
+function getEncryptionKey() {
+  return crypto.createHash("sha256").update(ENCRYPTION_SECRET).digest();
+}
+
+function encryptText(text) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", getEncryptionKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return Buffer.concat([iv, authTag, encrypted]).toString("base64");
+}
+
+function decryptText(encoded) {
+  const data = Buffer.from(encoded, "base64");
+  const iv = data.subarray(0, 12);
+  const authTag = data.subarray(12, 28);
+  const encrypted = data.subarray(28);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", getEncryptionKey(), iv);
+  decipher.setAuthTag(authTag);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+}
+
+// 6桁の数字だけのフレンドコードを、重複しないように作る
+async function generateFriendCode() {
+  for (let i = 0; i < 10; i++) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const existing = await db.collection("users").findOne({ friendCode: code });
+    if (!existing) return code;
+  }
+  throw new Error("フレンドコードの作成に失敗しました");
+}
 
 app.set("trust proxy", 1);
 app.use(express.json());
@@ -84,16 +120,20 @@ app.post("/api/auth/register", async (req, res) => {
 
   const pinHash = await bcrypt.hash(pin, 10);
   const securityAnswerHash = await bcrypt.hash(normalizeAnswer(securityAnswer), 10);
+  const friendCode = await generateFriendCode();
   const result = await db.collection("users").insertOne({
     name: trimmedName,
     pinHash,
+    pinEncrypted: encryptText(pin),
     securityQuestion: securityQuestion.trim(),
     securityAnswerHash,
+    securityAnswerEncrypted: encryptText(securityAnswer.trim()),
+    friendCode,
   });
 
   req.session.userId = result.insertedId.toString();
   req.session.userName = trimmedName;
-  res.json({ name: trimmedName });
+  res.json({ name: trimmedName, id: req.session.userId });
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -114,7 +154,7 @@ app.post("/api/auth/login", async (req, res) => {
 
   req.session.userId = user._id.toString();
   req.session.userName = user.name;
-  res.json({ name: user.name });
+  res.json({ name: user.name, id: req.session.userId });
 });
 
 app.get("/api/auth/security-question", async (req, res) => {
@@ -153,7 +193,12 @@ app.post("/api/auth/reset-pin", async (req, res) => {
   }
 
   const newPinHash = await bcrypt.hash(newPin, 10);
-  await db.collection("users").updateOne({ _id: user._id }, { $set: { pinHash: newPinHash } });
+  await db
+    .collection("users")
+    .updateOne(
+      { _id: user._id },
+      { $set: { pinHash: newPinHash, pinEncrypted: encryptText(newPin) } }
+    );
   res.json({ ok: true });
 });
 
@@ -167,7 +212,217 @@ app.get("/api/auth/me", (req, res) => {
   if (!req.session.userId) {
     return res.json({ loggedIn: false });
   }
-  res.json({ loggedIn: true, name: req.session.userName });
+  res.json({ loggedIn: true, name: req.session.userName, id: req.session.userId });
+});
+
+// ---------- マイページ ----------
+
+app.get("/api/profile", requireAuth, async (req, res) => {
+  const user = await db
+    .collection("users")
+    .findOne({ _id: new ObjectId(req.session.userId) });
+  if (!user) {
+    return res.status(404).json({ error: "見つかりませんでした" });
+  }
+
+  res.json({
+    name: user.name,
+    friendCode: user.friendCode,
+    pin: user.pinEncrypted ? decryptText(user.pinEncrypted) : null,
+    securityQuestion: user.securityQuestion || "",
+    securityAnswer: user.securityAnswerEncrypted
+      ? decryptText(user.securityAnswerEncrypted)
+      : null,
+  });
+});
+
+// ---------- フレンド機能 ----------
+
+app.get("/api/friends", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+
+  const friendships = await db
+    .collection("friendships")
+    .find({ $or: [{ userA: myId }, { userB: myId }] })
+    .toArray();
+  const friendIds = friendships.map((f) => (f.userA === myId ? f.userB : f.userA));
+  const friendUsers = await db
+    .collection("users")
+    .find({ _id: { $in: friendIds.map((id) => new ObjectId(id)) } })
+    .toArray();
+  const friends = friendUsers.map((u) => ({ id: u._id.toString(), name: u.name }));
+
+  const incoming = await db
+    .collection("friendRequests")
+    .find({ toUserId: myId, status: "pending" })
+    .toArray();
+  const outgoing = await db
+    .collection("friendRequests")
+    .find({ fromUserId: myId, status: "pending" })
+    .toArray();
+
+  res.json({
+    friends,
+    incomingRequests: incoming.map((r) => ({
+      id: r._id.toString(),
+      fromName: r.fromName,
+    })),
+    outgoingRequests: outgoing.map((r) => ({
+      id: r._id.toString(),
+      toName: r.toName,
+    })),
+  });
+});
+
+app.post("/api/friends/request", requireAuth, async (req, res) => {
+  const { friendCode } = req.body;
+  const myId = req.session.userId;
+
+  if (typeof friendCode !== "string" || friendCode.trim() === "") {
+    return res.status(400).json({ error: "フレンドコードを入力してね" });
+  }
+
+  const target = await db.collection("users").findOne({ friendCode: friendCode.trim() });
+  if (!target) {
+    return res.status(400).json({ error: "そのフレンドコードは見つかりませんでした" });
+  }
+  const targetId = target._id.toString();
+  if (targetId === myId) {
+    return res.status(400).json({ error: "自分自身には申請できません" });
+  }
+
+  const existingFriendship = await db.collection("friendships").findOne({
+    $or: [
+      { userA: myId, userB: targetId },
+      { userA: targetId, userB: myId },
+    ],
+  });
+  if (existingFriendship) {
+    return res.status(400).json({ error: "すでにフレンドです" });
+  }
+
+  const existingRequest = await db.collection("friendRequests").findOne({
+    status: "pending",
+    $or: [
+      { fromUserId: myId, toUserId: targetId },
+      { fromUserId: targetId, toUserId: myId },
+    ],
+  });
+  if (existingRequest) {
+    return res.status(400).json({ error: "すでに申請中です" });
+  }
+
+  const me = await db.collection("users").findOne({ _id: new ObjectId(myId) });
+  await db.collection("friendRequests").insertOne({
+    fromUserId: myId,
+    fromName: me.name,
+    toUserId: targetId,
+    toName: target.name,
+    status: "pending",
+    createdAt: new Date(),
+  });
+
+  res.json({ ok: true });
+});
+
+app.post("/api/friends/accept", requireAuth, async (req, res) => {
+  const { requestId } = req.body;
+  const myId = req.session.userId;
+
+  const request = await db
+    .collection("friendRequests")
+    .findOne({ _id: new ObjectId(requestId), toUserId: myId, status: "pending" });
+  if (!request) {
+    return res.status(400).json({ error: "申請が見つかりませんでした" });
+  }
+
+  await db.collection("friendships").insertOne({
+    userA: request.fromUserId,
+    userB: request.toUserId,
+    createdAt: new Date(),
+  });
+  await db.collection("friendRequests").deleteOne({ _id: request._id });
+
+  res.json({ ok: true });
+});
+
+app.post("/api/friends/reject", requireAuth, async (req, res) => {
+  const { requestId } = req.body;
+  const myId = req.session.userId;
+
+  await db
+    .collection("friendRequests")
+    .deleteOne({ _id: new ObjectId(requestId), toUserId: myId, status: "pending" });
+
+  res.json({ ok: true });
+});
+
+// ---------- チャット ----------
+
+function conversationId(userIdA, userIdB) {
+  return [userIdA, userIdB].sort().join("_");
+}
+
+async function areFriends(userIdA, userIdB) {
+  const friendship = await db.collection("friendships").findOne({
+    $or: [
+      { userA: userIdA, userB: userIdB },
+      { userA: userIdB, userB: userIdA },
+    ],
+  });
+  return Boolean(friendship);
+}
+
+app.get("/api/messages/:friendId", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  const friendId = req.params.friendId;
+
+  if (!(await areFriends(myId, friendId))) {
+    return res.status(403).json({ error: "フレンドではありません" });
+  }
+
+  const messages = await db
+    .collection("messages")
+    .find({ conversationId: conversationId(myId, friendId) })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  res.json(
+    messages.map((m) => ({
+      id: m._id.toString(),
+      fromUserId: m.fromUserId,
+      text: m.text,
+      createdAt: m.createdAt,
+    }))
+  );
+});
+
+app.post("/api/messages/:friendId", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  const friendId = req.params.friendId;
+  const { text } = req.body;
+
+  if (!(await areFriends(myId, friendId))) {
+    return res.status(403).json({ error: "フレンドではありません" });
+  }
+  if (typeof text !== "string" || text.trim() === "") {
+    return res.status(400).json({ error: "メッセージを入力してね" });
+  }
+
+  const doc = {
+    conversationId: conversationId(myId, friendId),
+    fromUserId: myId,
+    text: text.trim(),
+    createdAt: new Date(),
+  };
+  const result = await db.collection("messages").insertOne(doc);
+
+  res.json({
+    id: result.insertedId.toString(),
+    fromUserId: myId,
+    text: doc.text,
+    createdAt: doc.createdAt,
+  });
 });
 
 // ---------- 勉強記録 ----------
