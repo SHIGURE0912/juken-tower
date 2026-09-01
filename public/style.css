@@ -317,23 +317,29 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 10;
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 2px;
   background: white;
-  padding: 10px;
+  padding: 8px 4px;
   box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .nav-btn {
   border: none;
   background: none;
-  padding: 8px 16px;
-  font-size: 15px;
+  padding: 8px 6px;
+  font-size: 12px;
   color: #aaa;
   font-weight: bold;
   cursor: pointer;
   border-radius: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .nav-btn.active {
@@ -1859,4 +1865,181 @@ body {
   font-size: 14px;
   color: #999;
   margin: 0 0 18px;
+}
+
+/* ホーム画面: タワーへのリンク */
+.tower-link-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #6c63ff, #8f88ff);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 4px 0 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(108,99,255,0.3);
+}
+
+.tower-link-emoji {
+  font-size: 30px;
+}
+
+.tower-link-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+#tower-link-label {
+  color: white;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.tower-link-count {
+  color: rgba(255,255,255,0.85);
+  font-size: 12px;
+}
+
+.tower-link-arrow {
+  color: white;
+  font-size: 16px;
+}
+
+/* ホーム画面: ストップウォッチ・タイマー */
+.timer-box-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+  text-align: center;
+}
+
+.countdown-timer-box {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+
+.countdown-timer-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.countdown-timer-setup-row {
+  display: flex;
+  gap: 8px;
+}
+
+.countdown-timer-setup-row input {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.countdown-timer-display {
+  color: #ff7043;
+}
+
+/* タワー専用画面 */
+.tower-screen {
+  padding: 0 !important;
+  align-items: stretch !important;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.tower-screen-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.9);
+}
+
+.tower-screen-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px 16px 100px;
+  box-sizing: border-box;
+}
+
+.tower-screen-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tower-screen-back-btn {
+  border: none;
+  background: rgba(255,255,255,0.85);
+  color: #444;
+  font-weight: bold;
+  font-size: 13px;
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.tower-screen-streak {
+  background: rgba(255,255,255,0.85);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.tower-screen-theme-label {
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  margin: 6px 0 10px;
+}
+
+.tower-screen-tower-wrap {
+  flex: 1;
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tower-screen-tower-wrap .tower {
+  max-width: 100%;
+}
+
+.tower-screen-total {
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  margin-top: 10px;
+}
+
+.tower-screen-nav {
+  background: rgba(255,255,255,0.95);
 }

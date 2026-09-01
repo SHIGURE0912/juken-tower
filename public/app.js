@@ -34,14 +34,14 @@ const BADGE_TIERS = [
 ];
 
 const WORLD_THEMES = [
-  { min: 0, name: "はらっぱ", emoji: "🌱", bg: "linear-gradient(#bdeaff,#eaffea)" },
-  { min: 10, name: "にほん", emoji: "⛩️", bg: "linear-gradient(#ffe0b2,#fff3e0)" },
-  { min: 50, name: "フランス", emoji: "🗼", bg: "linear-gradient(#dcedc8,#f1f8e9)" },
-  { min: 100, name: "エジプト", emoji: "🐫", bg: "linear-gradient(#ffe082,#fff8e1)" },
-  { min: 200, name: "アメリカ", emoji: "🗽", bg: "linear-gradient(#b3e5fc,#e1f5fe)" },
-  { min: 300, name: "やまのくに", emoji: "🏔️", bg: "linear-gradient(#cfd8dc,#eceff1)" },
-  { min: 400, name: "たいきけん", emoji: "🌌", bg: "linear-gradient(#7986cb,#303f9f)" },
-  { min: 500, name: "うちゅう", emoji: "🚀", bg: "linear-gradient(#0d1333,#1a237e)" },
+  { min: 0, name: "はらっぱ", emoji: "🌱", gif: "/tower-backgrounds/harappa.gif" },
+  { min: 10, name: "にほん", emoji: "⛩️", gif: "/tower-backgrounds/japan.gif" },
+  { min: 50, name: "フランス", emoji: "🗼", gif: "/tower-backgrounds/paris.gif" },
+  { min: 100, name: "エジプト", emoji: "🐫", gif: "/tower-backgrounds/egypt.gif" },
+  { min: 200, name: "アメリカ", emoji: "🗽", gif: "/tower-backgrounds/america.gif" },
+  { min: 300, name: "みらい", emoji: "🚗", gif: "/tower-backgrounds/future.gif" },
+  { min: 400, name: "たいきけん", emoji: "🌌", gif: "/tower-backgrounds/atmosphere.gif" },
+  { min: 500, name: "うちゅう", emoji: "🚀", gif: "/tower-backgrounds/space.gif" },
 ];
 
 function currentWorldTheme(blockCount) {
@@ -247,19 +247,39 @@ function renderTower(container, recordList, highlightLastAsNew) {
 
 // ---------- ホーム画面 ----------
 
-function renderTowerTheme() {
+function renderTowerLinkPreview() {
   const theme = currentWorldTheme(records.length);
-  const area = document.getElementById("tower-area");
-  area.style.background = theme.bg;
-  document.getElementById("tower-landmark").textContent = theme.emoji;
+  document.getElementById("tower-link-emoji").textContent = theme.emoji;
   document.getElementById(
-    "tower-theme-label"
-  ).textContent = `${theme.emoji} ${theme.name}を たびしています（${records.length}段）`;
+    "tower-link-count"
+  ).textContent = `${theme.name}・${records.length}段`;
+}
+
+function renderTowerScreen() {
+  const theme = currentWorldTheme(records.length);
+  document.getElementById(
+    "tower-screen-bg"
+  ).style.backgroundImage = `url(${theme.gif})`;
+  document.getElementById(
+    "tower-screen-theme-label"
+  ).textContent = `${theme.emoji} ${theme.name}を たびしています`;
+
+  renderTower(document.getElementById("tower-screen-tower"), records, false);
+
+  const totalMinutes = records.reduce((sum, r) => sum + r.minutes, 0);
+  document.getElementById("tower-screen-total").textContent =
+    records.length === 0
+      ? "まだ記録がありません"
+      : `${records.length}段・これまでの合計 ${totalMinutes}分`;
+
+  const streak = calcStreak(records);
+  document.getElementById(
+    "tower-screen-streak"
+  ).textContent = `🔥 ${streak}日連続`;
 }
 
 function renderHome() {
-  renderTower(document.getElementById("tower"), records, false);
-  renderTowerTheme();
+  renderTowerLinkPreview();
 
   const totalMinutes = records.reduce((sum, r) => sum + r.minutes, 0);
   const totalInfo = document.getElementById("total-info");
@@ -429,6 +449,101 @@ async function stopTimerAndRecord() {
   } catch (err) {
     showHomeMessage("記録できませんでした。もう一度試してね");
   }
+}
+
+// ---------- タイマー（カウントダウン） ----------
+
+let countdownRemainingSeconds = 0;
+let countdownIntervalId = null;
+let countdownTimerMinutes = 0;
+let countdownAudioCtx = null;
+
+function ensureAudioContext() {
+  if (!countdownAudioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) countdownAudioCtx = new AudioCtx();
+  }
+  return countdownAudioCtx;
+}
+
+function playTimerDoneSound() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const playTone = (delaySec) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    const start = ctx.currentTime + delaySec;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.35, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.4);
+    osc.start(start);
+    osc.stop(start + 0.42);
+  };
+  playTone(0);
+  playTone(0.5);
+  playTone(1.0);
+}
+
+function updateCountdownTimerDisplay() {
+  const m = String(Math.floor(countdownRemainingSeconds / 60)).padStart(2, "0");
+  const s = String(countdownRemainingSeconds % 60).padStart(2, "0");
+  document.getElementById("countdown-timer-display").textContent = `${m}:${s}`;
+}
+
+async function startCountdownTimer() {
+  if (!selectedSubject) {
+    showHomeMessage("先に教科を選んでね");
+    return;
+  }
+  const minutesInput = document.getElementById("countdown-timer-minutes");
+  const minutes = Number(minutesInput.value);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    showHomeMessage("正しい分数を入力してね");
+    return;
+  }
+  showHomeMessage("");
+  ensureAudioContext(); // ユーザー操作の直後に作っておくと、あとで音が鳴らせる
+
+  countdownTimerMinutes = Math.round(minutes);
+  countdownRemainingSeconds = countdownTimerMinutes * 60;
+  updateCountdownTimerDisplay();
+
+  document.getElementById("countdown-timer-setup").hidden = true;
+  document.getElementById("countdown-timer-running").hidden = false;
+
+  countdownIntervalId = setInterval(async () => {
+    countdownRemainingSeconds--;
+    updateCountdownTimerDisplay();
+
+    if (countdownRemainingSeconds <= 0) {
+      clearInterval(countdownIntervalId);
+      countdownIntervalId = null;
+      playTimerDoneSound();
+
+      document.getElementById("countdown-timer-setup").hidden = false;
+      document.getElementById("countdown-timer-running").hidden = true;
+      minutesInput.value = "";
+
+      try {
+        await saveRecord(selectedSubject, countdownTimerMinutes);
+        showCompleteScreen(selectedSubject, countdownTimerMinutes);
+      } catch (err) {
+        showHomeMessage("記録できませんでした。もう一度試してね");
+      }
+    }
+  }, 1000);
+}
+
+function cancelCountdownTimer() {
+  if (countdownIntervalId) clearInterval(countdownIntervalId);
+  countdownIntervalId = null;
+  countdownRemainingSeconds = 0;
+  document.getElementById("countdown-timer-setup").hidden = false;
+  document.getElementById("countdown-timer-running").hidden = true;
 }
 
 // ---------- 手入力での記録 ----------
@@ -1701,6 +1816,7 @@ function switchScreen(screenId) {
   if (screenId === "history-screen") renderHistory();
   if (screenId === "grades-screen") renderGradesScreen();
   if (screenId === "profile-screen") renderProfileScreen();
+  if (screenId === "tower-screen") renderTowerScreen();
 }
 
 // ---------- 初期化 ----------
@@ -1722,6 +1838,18 @@ function setupEvents() {
   document
     .getElementById("manual-record-btn")
     .addEventListener("click", recordManualMinutes);
+  document
+    .getElementById("countdown-timer-start-btn")
+    .addEventListener("click", startCountdownTimer);
+  document
+    .getElementById("countdown-timer-cancel-btn")
+    .addEventListener("click", cancelCountdownTimer);
+  document
+    .getElementById("tower-link-btn")
+    .addEventListener("click", () => switchScreen("tower-screen"));
+  document
+    .getElementById("tower-screen-back-btn")
+    .addEventListener("click", () => switchScreen("home-screen"));
   document
     .getElementById("back-home-btn")
     .addEventListener("click", () => switchScreen("home-screen"));

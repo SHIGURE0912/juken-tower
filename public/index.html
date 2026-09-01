@@ -154,11 +154,14 @@
       </div>
     </div>
 
-    <p id="tower-theme-label" class="tower-theme-label"></p>
-    <div id="tower-area" class="tower-area">
-      <div id="tower-landmark" class="tower-landmark"></div>
-      <div id="tower" class="tower"></div>
-    </div>
+    <button id="tower-link-btn" class="tower-link-btn">
+      <span id="tower-link-emoji" class="tower-link-emoji">🌱</span>
+      <span class="tower-link-text">
+        <span id="tower-link-label">タワーを見にいく</span>
+        <span id="tower-link-count" class="tower-link-count"></span>
+      </span>
+      <span class="tower-link-arrow">▶</span>
+    </button>
     <p id="total-info" class="total-info">まだ記録がありません</p>
 
     <div class="subject-select">
@@ -169,15 +172,31 @@
     </div>
 
     <div class="timer-box">
+      <p class="timer-box-title">⏱️ ストップウォッチ</p>
       <div id="timer-display" class="timer-display">00:00</div>
       <div class="timer-buttons">
-        <button id="timer-start-btn" class="action-btn">タイマー開始</button>
+        <button id="timer-start-btn" class="action-btn">ストップウォッチ開始</button>
         <button id="timer-stop-btn" class="action-btn stop-btn" hidden>記録する</button>
       </div>
     </div>
 
+    <div class="countdown-timer-box">
+      <p class="timer-box-title">⏰ タイマー</p>
+      <div id="countdown-timer-setup">
+        <p class="countdown-timer-hint">何分がんばる？</p>
+        <div class="countdown-timer-setup-row">
+          <input id="countdown-timer-minutes" type="number" min="1" max="180" placeholder="分" />
+          <button id="countdown-timer-start-btn" class="action-btn">タイマースタート</button>
+        </div>
+      </div>
+      <div id="countdown-timer-running" hidden>
+        <div id="countdown-timer-display" class="timer-display countdown-timer-display">00:00</div>
+        <button id="countdown-timer-cancel-btn" class="action-btn stop-btn">とめる</button>
+      </div>
+    </div>
+
     <div class="manual-box">
-      <p>タイマーを使わず、時間を直接入力してもOK</p>
+      <p>ストップウォッチやタイマーを使わず、時間を直接入力してもOK</p>
       <input id="manual-minutes" type="number" min="1" max="600" placeholder="分" />
       <button id="manual-record-btn" class="action-btn">この時間で記録する</button>
     </div>
@@ -186,6 +205,34 @@
 
     <nav class="bottom-nav">
       <button class="nav-btn active" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="tower-screen">タワー</button>
+      <button class="nav-btn" data-screen="history-screen">きろく</button>
+      <button class="nav-btn" data-screen="grades-screen">せいせき</button>
+      <button class="nav-btn" data-screen="profile-screen">マイページ</button>
+    </nav>
+  </section>
+
+  <!-- タワー専用画面 -->
+  <section id="tower-screen" class="screen tower-screen" hidden>
+    <div id="tower-screen-bg" class="tower-screen-bg"></div>
+    <div class="tower-screen-content">
+      <header class="tower-screen-header">
+        <button id="tower-screen-back-btn" class="tower-screen-back-btn">← ホーム</button>
+        <div id="tower-screen-streak" class="tower-screen-streak">🔥 0日連続</div>
+      </header>
+
+      <p id="tower-screen-theme-label" class="tower-screen-theme-label"></p>
+
+      <div class="tower-screen-tower-wrap">
+        <div id="tower-screen-tower" class="tower"></div>
+      </div>
+
+      <p id="tower-screen-total" class="tower-screen-total"></p>
+    </div>
+
+    <nav class="bottom-nav tower-screen-nav">
+      <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn active" data-screen="tower-screen">タワー</button>
       <button class="nav-btn" data-screen="history-screen">きろく</button>
       <button class="nav-btn" data-screen="grades-screen">せいせき</button>
       <button class="nav-btn" data-screen="profile-screen">マイページ</button>
@@ -232,6 +279,7 @@
 
     <nav class="bottom-nav">
       <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="tower-screen">タワー</button>
       <button class="nav-btn active" data-screen="history-screen">きろく</button>
       <button class="nav-btn" data-screen="grades-screen">せいせき</button>
       <button class="nav-btn" data-screen="profile-screen">マイページ</button>
@@ -349,6 +397,7 @@
 
     <nav class="bottom-nav">
       <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="tower-screen">タワー</button>
       <button class="nav-btn" data-screen="history-screen">きろく</button>
       <button class="nav-btn active" data-screen="grades-screen">せいせき</button>
       <button class="nav-btn" data-screen="profile-screen">マイページ</button>
@@ -461,6 +510,7 @@
 
     <nav class="bottom-nav">
       <button class="nav-btn" data-screen="home-screen">ホーム</button>
+      <button class="nav-btn" data-screen="tower-screen">タワー</button>
       <button class="nav-btn" data-screen="history-screen">きろく</button>
       <button class="nav-btn" data-screen="grades-screen">せいせき</button>
       <button class="nav-btn active" data-screen="profile-screen">マイページ</button>
