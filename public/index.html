@@ -238,18 +238,48 @@
     <div class="note-box">
       <p>この日の予定</p>
       <div id="day-events-list" class="day-events-list"></div>
-      <div class="emoji-picker-row">
-        <button class="emoji-pick-btn" data-emoji="📝">📝</button>
-        <button class="emoji-pick-btn" data-emoji="🏫">🏫</button>
-        <button class="emoji-pick-btn" data-emoji="⚽">⚽</button>
-        <button class="emoji-pick-btn" data-emoji="📚">📚</button>
-        <button class="emoji-pick-btn" data-emoji="💤">💤</button>
-        <button class="emoji-pick-btn" data-emoji="🎂">🎂</button>
+
+      <p class="category-picker-label">予定のしゅるいをえらぶ</p>
+      <div class="category-picker-grid">
+        <button class="category-pick-btn" data-category="test">
+          <span class="category-pick-icon" style="background:#e57373">📝</span>
+          <span class="category-pick-label">テスト</span>
+        </button>
+        <button class="category-pick-btn" data-category="school">
+          <span class="category-pick-icon" style="background:#64b5f6">🏫</span>
+          <span class="category-pick-label">学校</span>
+        </button>
+        <button class="category-pick-btn" data-category="club">
+          <span class="category-pick-icon" style="background:#81c784">⚽</span>
+          <span class="category-pick-label">部活</span>
+        </button>
+        <button class="category-pick-btn" data-category="cram">
+          <span class="category-pick-icon" style="background:#ffb74d">📚</span>
+          <span class="category-pick-label">塾</span>
+        </button>
+        <button class="category-pick-btn" data-category="rest">
+          <span class="category-pick-icon" style="background:#90a4ae">💤</span>
+          <span class="category-pick-label">休み</span>
+        </button>
+        <button class="category-pick-btn" data-category="birthday">
+          <span class="category-pick-icon" style="background:#f06292">🎂</span>
+          <span class="category-pick-label">誕生日</span>
+        </button>
+        <button class="category-pick-btn" data-category="other">
+          <span class="category-pick-icon" style="background:#9575cd">📌</span>
+          <span class="category-pick-label">その他</span>
+        </button>
       </div>
-      <div class="event-add-row">
-        <input id="day-event-input" type="text" placeholder="例: 〇〇模試" />
-        <button id="day-event-add-btn" class="action-btn">追加</button>
+
+      <input id="day-event-input" type="text" placeholder="くわしく（かかなくてもOK）れい：〇〇もし" />
+
+      <div class="event-date-range-row">
+        <label>なんにちもつづくときは、おわりの日もえらんでね</label>
+        <input id="day-event-enddate-input" type="date" />
       </div>
+
+      <button id="day-event-add-btn" class="action-btn">予定を追加する</button>
+      <p id="day-event-msg" class="saved-msg"></p>
     </div>
 
     <div class="note-box">

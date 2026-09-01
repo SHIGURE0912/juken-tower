@@ -6,6 +6,21 @@ const SUBJECT_COLORS = {
   理科: "#4caf50",
   社会: "#ffa726",
 };
+const SUBJECT_ICONS = {
+  国語: "📖",
+  算数: "🔢",
+  理科: "🔬",
+  社会: "🌏",
+};
+const EVENT_CATEGORIES = {
+  test: { label: "テスト", icon: "📝", color: "#e57373" },
+  school: { label: "学校", icon: "🏫", color: "#64b5f6" },
+  club: { label: "部活", icon: "⚽", color: "#81c784" },
+  cram: { label: "塾", icon: "📚", color: "#ffb74d" },
+  rest: { label: "休み", icon: "💤", color: "#90a4ae" },
+  birthday: { label: "誕生日", icon: "🎂", color: "#f06292" },
+  other: { label: "その他", icon: "📌", color: "#9575cd" },
+};
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 let currentUserName = null;
@@ -28,6 +43,7 @@ let timerSeconds = 0;
 let timerInterval = null;
 let detailDate = null;
 let calendarViewDate = new Date();
+let selectedEventCategory = null;
 
 // ---------- 日付まわりの小さな関数 ----------
 
@@ -118,11 +134,11 @@ async function fetchEvents() {
   events = await res.json();
 }
 
-async function saveEventApi(date, title) {
+async function saveEventApi(date, endDate, category, title) {
   const res = await fetch("/api/events", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ date, title }),
+    body: JSON.stringify({ date, endDate, category, title }),
   });
   if (!res.ok) throw new Error("予定の保存に失敗しました");
   return res.json();
@@ -407,6 +423,10 @@ function changeCalendarMonth(diff) {
   renderCalendar();
 }
 
+function eventsCoveringDate(dateStr) {
+  return events.filter((e) => dateStr >= e.date && dateStr <= (e.endDate || e.date));
+}
+
 function renderCalendar() {
   const now = new Date();
   const year = calendarViewDate.getFullYear();
@@ -422,12 +442,6 @@ function renderCalendar() {
     if (!recordsByDate[r.date].includes(r.subject)) {
       recordsByDate[r.date].push(r.subject);
     }
-  });
-
-  const eventsByDate = {};
-  events.forEach((e) => {
-    if (!eventsByDate[e.date]) eventsByDate[e.date] = [];
-    eventsByDate[e.date].push(e);
   });
 
   const calendar = document.getElementById("calendar");
@@ -474,7 +488,7 @@ function renderCalendar() {
       const tag = document.createElement("span");
       tag.className = "day-tag";
       tag.style.background = SUBJECT_COLORS[subject];
-      tag.textContent = subject;
+      tag.textContent = `${SUBJECT_ICONS[subject]} ${subject}`;
       tagBox.appendChild(tag);
     });
     if (subjectsToday.length > 2) {
@@ -483,20 +497,37 @@ function renderCalendar() {
       more.textContent = `+${subjectsToday.length - 2}`;
       tagBox.appendChild(more);
     }
-
-    const eventsToday = eventsByDate[dateStr] || [];
-    if (eventsToday.length > 0) {
-      const eventTag = document.createElement("span");
-      eventTag.className = "day-tag day-tag-event";
-      const label =
-        eventsToday.length > 1
-          ? `${eventsToday[0].title} +${eventsToday.length - 1}`
-          : eventsToday[0].title;
-      eventTag.textContent = label;
-      tagBox.appendChild(eventTag);
-    }
-
     cell.appendChild(tagBox);
+
+    // 複数日にまたがる予定を優先して表示する(セル間で帯がつながって見えるように)
+    const eventsToday = eventsCoveringDate(dateStr).slice().sort((a, b) => {
+      const aSpan = (a.endDate || a.date) !== a.date ? 1 : 0;
+      const bSpan = (b.endDate || b.date) !== b.date ? 1 : 0;
+      return bSpan - aSpan;
+    });
+    if (eventsToday.length > 0) {
+      const primary = eventsToday[0];
+      const info = eventCategoryInfo(primary.category);
+      const start = primary.date;
+      const end = primary.endDate || primary.date;
+      const isSegStart = dateStr === start || weekday === 0;
+      const isSegEnd = dateStr === end || weekday === 6;
+
+      const bar = document.createElement("div");
+      bar.className = "day-event-bar";
+      bar.style.background = info.color;
+      bar.style.borderTopLeftRadius = isSegStart ? "8px" : "0";
+      bar.style.borderBottomLeftRadius = isSegStart ? "8px" : "0";
+      bar.style.borderTopRightRadius = isSegEnd ? "8px" : "0";
+      bar.style.borderBottomRightRadius = isSegEnd ? "8px" : "0";
+      bar.style.left = isSegStart ? "3px" : "-4px";
+      bar.style.right = isSegEnd ? "3px" : "-4px";
+      if (isSegStart) {
+        const extraLabel = eventsToday.length > 1 ? ` +${eventsToday.length - 1}` : "";
+        bar.textContent = `${info.icon}${info.label}${extraLabel}`;
+      }
+      cell.appendChild(bar);
+    }
 
     if (notes[dateStr]) {
       cell.classList.add("has-note");
@@ -534,32 +565,57 @@ function showDayDetail(dateStr) {
   document.getElementById("day-note-input").value = notes[dateStr] || "";
   document.getElementById("day-note-saved-msg").textContent = "";
 
+  selectedEventCategory = null;
+  document.querySelectorAll(".category-pick-btn").forEach((btn) => {
+    btn.classList.remove("selected");
+  });
+  document.getElementById("day-event-input").value = "";
+  document.getElementById("day-event-enddate-input").value = "";
+  document.getElementById("day-event-msg").textContent = "";
+
   renderDayEvents(dateStr);
 
   switchScreen("day-detail-screen");
 }
 
+function selectEventCategory(category) {
+  selectedEventCategory = category;
+  document.querySelectorAll(".category-pick-btn").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.category === category);
+  });
+}
+
+function eventCategoryInfo(category) {
+  return EVENT_CATEGORIES[category] || EVENT_CATEGORIES.other;
+}
+
 function renderDayEvents(dateStr) {
   const list = document.getElementById("day-events-list");
   list.innerHTML = "";
-  const dayEvents = events.filter((e) => e.date === dateStr);
+  const dayEvents = events.filter(
+    (e) => dateStr >= e.date && dateStr <= (e.endDate || e.date)
+  );
 
   if (dayEvents.length === 0) {
-    list.innerHTML = `<p class="no-record-text">予定はまだありません</p>`;
+    list.innerHTML = `<p class="no-record-text">まだ予定はないよ</p>`;
     return;
   }
 
   dayEvents.forEach((e) => {
+    const info = eventCategoryInfo(e.category);
     const row = document.createElement("div");
     row.className = "day-event-row";
+    row.style.borderLeft = `6px solid ${info.color}`;
 
     const label = document.createElement("span");
-    label.textContent = `📌 ${e.title}`;
+    const rangeText =
+      e.endDate && e.endDate !== e.date ? ` (${e.date}〜${e.endDate})` : "";
+    label.textContent = `${info.icon} ${info.label}${e.title ? " " + e.title : ""}${rangeText}`;
     row.appendChild(label);
 
     const delBtn = document.createElement("button");
     delBtn.className = "small-delete-btn";
-    delBtn.textContent = "削除";
+    delBtn.textContent = "けす";
     delBtn.addEventListener("click", async () => {
       await deleteEventApi(e.id);
       events = events.filter((ev) => ev.id !== e.id);
@@ -572,13 +628,31 @@ function renderDayEvents(dateStr) {
 }
 
 async function addDayEvent() {
-  const input = document.getElementById("day-event-input");
-  const title = input.value.trim();
-  if (!title) return;
+  const msg = document.getElementById("day-event-msg");
+  if (!selectedEventCategory) {
+    msg.textContent = "まず、予定のしゅるいをえらんでね";
+    return;
+  }
 
-  const event = await saveEventApi(detailDate, title);
+  const titleInput = document.getElementById("day-event-input");
+  const endDateInput = document.getElementById("day-event-enddate-input");
+
+  const event = await saveEventApi(
+    detailDate,
+    endDateInput.value || detailDate,
+    selectedEventCategory,
+    titleInput.value.trim()
+  );
   events.push(event);
-  input.value = "";
+
+  selectedEventCategory = null;
+  document.querySelectorAll(".category-pick-btn").forEach((btn) => {
+    btn.classList.remove("selected");
+  });
+  titleInput.value = "";
+  endDateInput.value = "";
+  msg.textContent = "追加したよ！";
+
   renderDayEvents(detailDate);
 }
 
@@ -1310,12 +1384,8 @@ function setupEvents() {
   document
     .getElementById("day-event-add-btn")
     .addEventListener("click", addDayEvent);
-  document.querySelectorAll(".emoji-pick-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const input = document.getElementById("day-event-input");
-      input.value = `${btn.dataset.emoji} ${input.value.replace(/^[^\sA-Za-z0-9ぁ-んァ-ヶ一-龠]+\s*/, "")}`;
-      input.focus();
-    });
+  document.querySelectorAll(".category-pick-btn").forEach((btn) => {
+    btn.addEventListener("click", () => selectEventCategory(btn.dataset.category));
   });
   document
     .getElementById("calendar-prev-btn")

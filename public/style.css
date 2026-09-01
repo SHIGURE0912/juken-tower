@@ -342,8 +342,20 @@ body {
   color: #4a90e2;
 }
 
+#history-screen {
+  background: #f0f5ea;
+}
+
+.calendar {
+  background: #ffffff;
+  border: 1px solid #e3d9c6;
+  border-radius: 14px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
 .calendar-day {
-  min-height: 62px;
+  min-height: 84px;
   border-radius: 10px;
   background: white;
   display: flex;
@@ -351,7 +363,7 @@ body {
   align-items: flex-start;
   padding: 4px 3px;
   font-size: 12px;
-  border: 1px solid #eee;
+  border: 1px solid #e8e0d0;
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
@@ -361,7 +373,7 @@ body {
   background: transparent;
   border: none;
   cursor: default;
-  min-height: 62px;
+  min-height: 84px;
 }
 
 .calendar-day.today {
@@ -418,8 +430,21 @@ body {
   background: #ccc;
 }
 
-.day-tag-event {
-  background: #ffa726;
+.day-event-bar {
+  position: absolute;
+  bottom: 4px;
+  height: 17px;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  padding: 0 2px;
 }
 
 /* 1週間の比較グラフ */
@@ -632,6 +657,81 @@ body {
   padding: 8px;
   font-size: 14px;
   min-width: 0;
+}
+
+.category-picker-label {
+  font-size: 13px;
+  color: #888;
+  margin: 10px 0 6px;
+}
+
+.category-picker-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.category-pick-btn {
+  border: 2px solid transparent;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.category-pick-btn.selected {
+  border-color: #6c63ff;
+  background: #f5f4ff;
+}
+
+.category-pick-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.category-pick-label {
+  font-size: 11px;
+  color: #666;
+  font-weight: bold;
+}
+
+#day-event-input {
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+.event-date-range-row {
+  margin-bottom: 12px;
+}
+
+.event-date-range-row label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.event-date-range-row input {
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 14px;
 }
 
 /* カウントダウン（日めくり） */

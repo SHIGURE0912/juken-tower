@@ -617,17 +617,33 @@ app.get("/api/events", requireAuth, async (req, res) => {
   res.json(events.map(toClientDoc));
 });
 
+const EVENT_CATEGORIES = ["test", "school", "club", "cram", "rest", "birthday", "other"];
+
 app.post("/api/events", requireAuth, async (req, res) => {
-  const { date, title } = req.body;
+  const { date, endDate, category, title } = req.body;
 
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: "日付が正しくありません" });
   }
-  if (typeof title !== "string" || title.trim() === "") {
+  const finalEndDate =
+    typeof endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : date;
+  if (finalEndDate < date) {
+    return res.status(400).json({ error: "終了日は開始日より後にしてね" });
+  }
+  if (!EVENT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: "カテゴリが正しくありません" });
+  }
+  if (typeof title !== "string") {
     return res.status(400).json({ error: "予定のタイトルが正しくありません" });
   }
 
-  const doc = { userId: req.session.userId, date, title: title.trim() };
+  const doc = {
+    userId: req.session.userId,
+    date,
+    endDate: finalEndDate,
+    category,
+    title: title.trim(),
+  };
   const result = await db.collection("events").insertOne(doc);
   res.json(toClientDoc({ ...doc, _id: result.insertedId }));
 });
