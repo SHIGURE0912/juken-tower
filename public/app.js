@@ -1860,7 +1860,20 @@ function renderMessages(messages) {
 
     const bubble = document.createElement("div");
     bubble.className = "chat-bubble " + (isMe ? "chat-bubble-me" : "chat-bubble-other");
-    bubble.textContent = m.text;
+    if (m.imageData) {
+      bubble.classList.add("chat-bubble-image");
+      const img = document.createElement("img");
+      img.className = "chat-image";
+      img.src = m.imageData;
+      img.addEventListener("click", () => window.open(m.imageData, "_blank"));
+      bubble.appendChild(img);
+    }
+    if (m.text) {
+      const textEl = document.createElement("div");
+      textEl.className = "chat-bubble-text";
+      textEl.textContent = m.text;
+      bubble.appendChild(textEl);
+    }
     row.appendChild(bubble);
 
     container.appendChild(row);
@@ -1878,6 +1891,22 @@ async function sendChatMessage() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
+  });
+  if (res.ok) {
+    await loadMessages();
+  }
+}
+
+async function sendChatImage(file) {
+  if (!file || !currentChatFriendId) return;
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  const imageData = await resizeImageFile(file, 800);
+  input.value = "";
+  const res = await fetch(`/api/messages/${currentChatFriendId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, imageData }),
   });
   if (res.ok) {
     await loadMessages();
@@ -2024,6 +2053,18 @@ function setupEvents() {
   document.getElementById("chat-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendChatMessage();
   });
+  document
+    .getElementById("chat-image-btn")
+    .addEventListener("click", () => {
+      document.getElementById("chat-image-input").click();
+    });
+  document
+    .getElementById("chat-image-input")
+    .addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      await sendChatImage(file);
+      e.target.value = "";
+    });
 
   document
     .getElementById("go-register-btn")

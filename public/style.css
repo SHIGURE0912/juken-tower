@@ -1423,6 +1423,45 @@ body {
   width: auto;
 }
 
+.chat-icon-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #f0eeff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.chat-icon-btn:active {
+  background: #e0ddff;
+}
+
+.chat-image {
+  max-width: 160px;
+  max-height: 160px;
+  border-radius: 12px;
+  display: block;
+  cursor: pointer;
+}
+
+.chat-bubble-image {
+  padding: 6px;
+}
+
+.chat-bubble-image .chat-image {
+  margin-bottom: 0;
+}
+
+.chat-bubble-image .chat-image + .chat-bubble-text {
+  margin-top: 6px;
+}
+
+.chat-bubble-text {
+  padding: 0 4px;
+}
+
 /* アイコン */
 .avatar-card {
   width: 100%;

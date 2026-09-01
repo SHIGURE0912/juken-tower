@@ -53,7 +53,7 @@ async function generateFriendCode() {
 }
 
 app.set("trust proxy", 1);
-app.use(express.json({ limit: "2mb" })); // アイコン画像(base64)を受け取れるように上限を広げる
+app.use(express.json({ limit: "5mb" })); // アイコン画像・チャット画像(base64)を受け取れるように上限を広げる
 app.use(
   session({
     secret: SESSION_SECRET,
@@ -537,6 +537,7 @@ app.get("/api/messages/:friendId", requireAuth, async (req, res) => {
       id: m._id.toString(),
       fromUserId: m.fromUserId,
       text: m.text,
+      imageData: m.imageData || null,
       createdAt: m.createdAt,
     }))
   );
@@ -545,19 +546,22 @@ app.get("/api/messages/:friendId", requireAuth, async (req, res) => {
 app.post("/api/messages/:friendId", requireAuth, async (req, res) => {
   const myId = req.session.userId;
   const friendId = req.params.friendId;
-  const { text } = req.body;
+  const { text, imageData } = req.body;
 
   if (!(await areFriends(myId, friendId))) {
     return res.status(403).json({ error: "フレンドではありません" });
   }
-  if (typeof text !== "string" || text.trim() === "") {
+  const trimmedText = typeof text === "string" ? text.trim() : "";
+  const hasImage = typeof imageData === "string" && imageData.startsWith("data:image/");
+  if (trimmedText === "" && !hasImage) {
     return res.status(400).json({ error: "メッセージを入力してね" });
   }
 
   const doc = {
     conversationId: conversationId(myId, friendId),
     fromUserId: myId,
-    text: text.trim(),
+    text: trimmedText,
+    imageData: hasImage ? imageData : null,
     createdAt: new Date(),
   };
   const result = await db.collection("messages").insertOne(doc);
@@ -566,6 +570,7 @@ app.post("/api/messages/:friendId", requireAuth, async (req, res) => {
     id: result.insertedId.toString(),
     fromUserId: myId,
     text: doc.text,
+    imageData: doc.imageData,
     createdAt: doc.createdAt,
   });
 });
