@@ -502,6 +502,64 @@ app.get("/api/friends/:friendId/scores", requireAuth, requireSharedAccess, async
   res.json(scores.map(toClientDoc));
 });
 
+app.get("/api/friends/:friendId/records", requireAuth, requireSharedAccess, async (req, res) => {
+  const records = await db
+    .collection("records")
+    .find({ userId: req.params.friendId })
+    .toArray();
+  res.json(records.map(toClientDoc));
+});
+
+// フレンドのがんばりを見た人が残す、応援の一言コメント
+app.get(
+  "/api/friends/:friendId/comments",
+  requireAuth,
+  requireSharedAccess,
+  async (req, res) => {
+    const comments = await db
+      .collection("progressComments")
+      .find({ targetUserId: req.params.friendId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json(comments.map(toClientDoc));
+  }
+);
+
+app.post(
+  "/api/friends/:friendId/comment",
+  requireAuth,
+  requireSharedAccess,
+  async (req, res) => {
+    const { text } = req.body;
+    if (typeof text !== "string" || text.trim() === "") {
+      return res.status(400).json({ error: "コメントを入力してね" });
+    }
+    const me = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(req.session.userId) });
+
+    const doc = {
+      targetUserId: req.params.friendId,
+      fromUserId: req.session.userId,
+      fromName: me.name,
+      text: text.trim(),
+      createdAt: new Date(),
+    };
+    const result = await db.collection("progressComments").insertOne(doc);
+    res.json(toClientDoc({ ...doc, _id: result.insertedId }));
+  }
+);
+
+// 自分のがんばりに、みんなが残してくれたコメントを見る
+app.get("/api/my-progress-comments", requireAuth, async (req, res) => {
+  const comments = await db
+    .collection("progressComments")
+    .find({ targetUserId: req.session.userId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  res.json(comments.map(toClientDoc));
+});
+
 // ---------- チャット ----------
 
 function conversationId(userIdA, userIdB) {

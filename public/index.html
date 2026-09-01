@@ -472,6 +472,11 @@
       <div id="badge-case-grid" class="badge-case-grid"></div>
     </div>
 
+    <div class="progress-comment-card">
+      <h3 class="progress-comment-title">💌 みんなからの応援コメント</h3>
+      <div id="my-progress-comment-list" class="progress-comment-list"></div>
+    </div>
+
     <div class="friend-code-card">
       <p>あなたのフレンドコード</p>
       <div id="profile-friend-code" class="friend-code-display"></div>
@@ -524,14 +529,56 @@
       <button id="friend-progress-back-btn" class="logout-btn">もどる</button>
     </header>
 
+    <div class="friend-progress-tower-card">
+      <h3 class="friend-progress-tower-title">🏗️ タワー</h3>
+      <p id="friend-progress-tower-theme" class="friend-progress-tower-theme"></p>
+      <div class="tower-area friend-progress-tower-area">
+        <div id="friend-progress-tower" class="tower"></div>
+      </div>
+      <p id="friend-progress-tower-total" class="friend-progress-tower-total"></p>
+    </div>
+
     <div class="note-feed-card">
       <h3 class="note-feed-title">📔 がんばりノート</h3>
       <div id="friend-progress-note-list"></div>
     </div>
 
+    <div class="grade-chart-card">
+      <h3 class="grade-chart-card-title">📈 せいせきグラフ</h3>
+      <div id="friend-progress-subject-select" class="subject-select">
+        <button class="subject-btn" data-subject="国語">国語</button>
+        <button class="subject-btn" data-subject="算数">算数</button>
+        <button class="subject-btn" data-subject="理科">理科</button>
+        <button class="subject-btn" data-subject="社会">社会</button>
+      </div>
+      <div class="chart-mode-toggle">
+        <button id="friend-progress-chart-mode-score-btn" class="chart-mode-btn selected">点数でみる</button>
+        <button id="friend-progress-chart-mode-hensachi-btn" class="chart-mode-btn">偏差値でみる</button>
+      </div>
+      <div id="friend-progress-grade-chart-box" class="grade-chart-box">
+        <p id="friend-progress-grade-chart-hint" class="grade-chart-hint">教科を選ぶと、点数の変化がグラフで見られるよ</p>
+        <svg id="friend-progress-grade-chart" viewBox="0 0 300 180" class="grade-chart" hidden></svg>
+        <div id="friend-progress-grade-tooltip" class="grade-tooltip" hidden></div>
+      </div>
+    </div>
+
     <div class="score-comment-feed-card">
       <h3 class="score-comment-feed-title">🏆 せいせきコメント</h3>
       <div id="friend-progress-score-list"></div>
+    </div>
+
+    <div class="progress-comment-card">
+      <h3 class="progress-comment-title">💌 一言コメントを残す</h3>
+      <div class="progress-comment-form">
+        <input
+          id="friend-progress-comment-input"
+          type="text"
+          maxlength="200"
+          placeholder="がんばってるね！など"
+        />
+        <button id="friend-progress-comment-send-btn" class="action-btn">送る</button>
+      </div>
+      <div id="friend-progress-comment-list" class="progress-comment-list"></div>
     </div>
   </section>
 

@@ -1688,6 +1688,133 @@ body {
   word-break: break-word;
 }
 
+/* フレンドのがんばり: タワー表示 */
+.friend-progress-tower-card {
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.friend-progress-tower-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #6c63ff;
+}
+
+.friend-progress-tower-theme {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+.friend-progress-tower-area {
+  height: 260px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.friend-progress-tower-total {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+/* フレンドのがんばり: せいせきグラフ */
+.grade-chart-card {
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.grade-chart-card-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #6c63ff;
+}
+
+/* 応援の一言コメント */
+.progress-comment-card {
+  width: 100%;
+  background: #f4f2ff;
+  border: 2px solid #d8d3ff;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.progress-comment-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #6c63ff;
+}
+
+.progress-comment-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.progress-comment-form input {
+  flex: 1;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.progress-comment-form .action-btn {
+  width: auto;
+  padding: 8px 18px;
+  margin-bottom: 0;
+}
+
+.progress-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-comment-item {
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.progress-comment-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.progress-comment-item-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #6c63ff;
+}
+
+.progress-comment-item-date {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.progress-comment-item-text {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 /* マイページ: タワーのデザイン */
 .tower-skin-card {
   width: 100%;

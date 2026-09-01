@@ -78,6 +78,12 @@ let timerInterval = null;
 let detailDate = null;
 let calendarViewDate = new Date();
 let selectedEventCategory = null;
+let friendProgressFriendId = null;
+let friendProgressFriendName = null;
+let friendProgressRecords = [];
+let friendProgressScores = [];
+let friendProgressSelectedSubject = null;
+let friendProgressChartMode = "score";
 
 // ---------- 日付まわりの小さな関数 ----------
 
@@ -1102,10 +1108,18 @@ function setGradeChartMode(mode) {
   renderGradesScreen();
 }
 
-function renderGradeChart(subjectScores, mode) {
-  const svg = document.getElementById("grade-chart");
-  const hint = document.getElementById("grade-chart-hint");
-  const tooltip = document.getElementById("grade-tooltip");
+const DEFAULT_CHART_IDS = {
+  svg: "grade-chart",
+  hint: "grade-chart-hint",
+  tooltip: "grade-tooltip",
+  box: "grade-chart-box",
+};
+
+function renderGradeChart(subjectScores, mode, ids) {
+  ids = ids || DEFAULT_CHART_IDS;
+  const svg = document.getElementById(ids.svg);
+  const hint = document.getElementById(ids.hint);
+  const tooltip = document.getElementById(ids.tooltip);
   svg.innerHTML = "";
   tooltip.hidden = true;
 
@@ -1232,11 +1246,11 @@ function renderGradeChart(subjectScores, mode) {
     circle.setAttribute("r", 5);
     circle.setAttribute("fill", color);
     circle.style.cursor = "pointer";
-    circle.addEventListener("mouseenter", () => showGradeTooltip(p));
+    circle.addEventListener("mouseenter", () => showGradeTooltip(p, ids));
     circle.addEventListener("mouseleave", () => {
       tooltip.hidden = true;
     });
-    circle.addEventListener("click", () => showGradeTooltip(p));
+    circle.addEventListener("click", () => showGradeTooltip(p, ids));
     svg.appendChild(circle);
   });
 }
@@ -1247,10 +1261,11 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function showGradeTooltip(point) {
-  const tooltip = document.getElementById("grade-tooltip");
-  const svg = document.getElementById("grade-chart");
-  const box = document.getElementById("grade-chart-box");
+function showGradeTooltip(point, ids) {
+  ids = ids || DEFAULT_CHART_IDS;
+  const tooltip = document.getElementById(ids.tooltip);
+  const svg = document.getElementById(ids.svg);
+  const box = document.getElementById(ids.box);
 
   const svgRect = svg.getBoundingClientRect();
   const boxRect = box.getBoundingClientRect();
@@ -1751,6 +1766,13 @@ async function setShareWithFriend(friendId, share) {
 }
 
 async function openFriendProgress(friendId, friendName) {
+  friendProgressFriendId = friendId;
+  friendProgressFriendName = friendName;
+  friendProgressSelectedSubject = null;
+  friendProgressChartMode = "score";
+  friendProgressRecords = [];
+  friendProgressScores = [];
+
   document.getElementById(
     "friend-progress-title"
   ).textContent = `${friendName}さんのがんばり`;
@@ -1760,9 +1782,10 @@ async function openFriendProgress(friendId, friendName) {
   noteList.innerHTML = "";
   scoreList.innerHTML = "";
 
-  const [notesRes, scoresRes] = await Promise.all([
+  const [notesRes, scoresRes, recordsRes] = await Promise.all([
     fetch(`/api/friends/${friendId}/notes`),
     fetch(`/api/friends/${friendId}/scores`),
+    fetch(`/api/friends/${friendId}/records`),
   ]);
 
   if (notesRes.ok) {
@@ -1773,13 +1796,150 @@ async function openFriendProgress(friendId, friendName) {
   }
 
   if (scoresRes.ok) {
-    const friendScores = await scoresRes.json();
-    renderScoreCommentFeedInto(scoreList, friendScores);
+    friendProgressScores = await scoresRes.json();
+    renderScoreCommentFeedInto(scoreList, friendProgressScores);
   } else {
     scoreList.innerHTML = `<p class="no-record-text">見られませんでした</p>`;
   }
 
+  if (recordsRes.ok) {
+    friendProgressRecords = await recordsRes.json();
+  }
+  renderFriendProgressTower();
+
+  document
+    .querySelectorAll("#friend-progress-screen .subject-btn")
+    .forEach((btn) => btn.classList.remove("selected"));
+  renderFriendProgressGradeSection();
+
+  await loadFriendProgressComments();
+
   switchScreen("friend-progress-screen");
+}
+
+function renderFriendProgressTower() {
+  const theme = currentWorldTheme(friendProgressRecords.length);
+  document.getElementById(
+    "friend-progress-tower-theme"
+  ).textContent = `${theme.emoji} ${theme.name}を たびしています`;
+
+  renderTower(document.getElementById("friend-progress-tower"), friendProgressRecords, false);
+
+  const totalMinutes = friendProgressRecords.reduce((sum, r) => sum + r.minutes, 0);
+  document.getElementById("friend-progress-tower-total").textContent =
+    friendProgressRecords.length === 0
+      ? "まだ記録がありません"
+      : `${friendProgressRecords.length}段・これまでの合計 ${totalMinutes}分`;
+}
+
+const FRIEND_PROGRESS_CHART_IDS = {
+  svg: "friend-progress-grade-chart",
+  hint: "friend-progress-grade-chart-hint",
+  tooltip: "friend-progress-grade-tooltip",
+  box: "friend-progress-grade-chart-box",
+};
+
+function selectFriendProgressSubject(subject) {
+  friendProgressSelectedSubject = subject;
+  document.querySelectorAll("#friend-progress-screen .subject-btn").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.subject === subject);
+  });
+  renderFriendProgressGradeSection();
+}
+
+function setFriendProgressChartMode(mode) {
+  friendProgressChartMode = mode;
+  renderFriendProgressGradeSection();
+}
+
+function renderFriendProgressGradeSection() {
+  document
+    .getElementById("friend-progress-chart-mode-score-btn")
+    .classList.toggle("selected", friendProgressChartMode === "score");
+  document
+    .getElementById("friend-progress-chart-mode-hensachi-btn")
+    .classList.toggle("selected", friendProgressChartMode === "hensachi");
+
+  if (!friendProgressSelectedSubject) {
+    document.getElementById("friend-progress-grade-chart").hidden = true;
+    const hint = document.getElementById("friend-progress-grade-chart-hint");
+    hint.hidden = false;
+    hint.textContent = "教科を選ぶと、点数の変化がグラフで見られるよ";
+    return;
+  }
+
+  const subjectScores = friendProgressScores
+    .filter((s) => s.subject === friendProgressSelectedSubject)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  renderGradeChart(subjectScores, friendProgressChartMode, FRIEND_PROGRESS_CHART_IDS);
+}
+
+async function loadFriendProgressComments() {
+  const list = document.getElementById("friend-progress-comment-list");
+  const res = await fetch(`/api/friends/${friendProgressFriendId}/comments`);
+  if (!res.ok) {
+    list.innerHTML = `<p class="no-record-text">見られませんでした</p>`;
+    return;
+  }
+  const comments = await res.json();
+  renderProgressCommentListInto(list, comments);
+}
+
+function renderProgressCommentListInto(list, comments) {
+  list.innerHTML = "";
+  if (comments.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだコメントがないよ</p>`;
+    return;
+  }
+  comments.forEach((c) => {
+    const item = document.createElement("div");
+    item.className = "progress-comment-item";
+
+    const top = document.createElement("div");
+    top.className = "progress-comment-item-top";
+    const name = document.createElement("span");
+    name.className = "progress-comment-item-name";
+    name.textContent = c.fromName;
+    top.appendChild(name);
+    const date = document.createElement("span");
+    date.className = "progress-comment-item-date";
+    const d = new Date(c.createdAt);
+    date.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
+    top.appendChild(date);
+    item.appendChild(top);
+
+    const text = document.createElement("div");
+    text.className = "progress-comment-item-text";
+    text.textContent = c.text;
+    item.appendChild(text);
+
+    list.appendChild(item);
+  });
+}
+
+async function sendFriendProgressComment() {
+  const input = document.getElementById("friend-progress-comment-input");
+  const text = input.value.trim();
+  if (!text || !friendProgressFriendId) return;
+
+  input.value = "";
+  const res = await fetch(`/api/friends/${friendProgressFriendId}/comment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (res.ok) {
+    await loadFriendProgressComments();
+  }
+}
+
+async function loadMyProgressComments() {
+  const list = document.getElementById("my-progress-comment-list");
+  const res = await fetch("/api/my-progress-comments");
+  if (!res.ok) return;
+  const comments = await res.json();
+  renderProgressCommentListInto(list, comments);
 }
 
 async function refreshFriendsSection() {
@@ -1793,6 +1953,7 @@ async function renderProfileScreen() {
   renderFriendsSection();
   renderTowerSkinPicker();
   renderBadgeCase();
+  loadMyProgressComments();
 }
 
 async function sendFriendRequest() {
@@ -2004,6 +2165,24 @@ function setupEvents() {
   document
     .getElementById("chart-mode-hensachi-btn")
     .addEventListener("click", () => setGradeChartMode("hensachi"));
+
+  document.querySelectorAll("#friend-progress-screen .subject-btn").forEach((btn) => {
+    btn.addEventListener("click", () => selectFriendProgressSubject(btn.dataset.subject));
+  });
+  document
+    .getElementById("friend-progress-chart-mode-score-btn")
+    .addEventListener("click", () => setFriendProgressChartMode("score"));
+  document
+    .getElementById("friend-progress-chart-mode-hensachi-btn")
+    .addEventListener("click", () => setFriendProgressChartMode("hensachi"));
+  document
+    .getElementById("friend-progress-comment-send-btn")
+    .addEventListener("click", sendFriendProgressComment);
+  document
+    .getElementById("friend-progress-comment-input")
+    .addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendFriendProgressComment();
+    });
 
   document.getElementById("login-btn").addEventListener("click", handleLogin);
   document
