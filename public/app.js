@@ -229,7 +229,7 @@ function renderTower(container, recordList, highlightLastAsNew) {
   recent.forEach((r, index) => {
     const block = document.createElement("div");
     block.className = "tower-block";
-    block.style.background = SUBJECT_COLORS[r.subject];
+    block.style.backgroundColor = SUBJECT_COLORS[r.subject];
     block.style.height = blockHeight(r.minutes) + "px";
     block.title = `${r.date} ${r.subject} ${r.minutes}分`;
 
