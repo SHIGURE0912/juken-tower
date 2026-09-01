@@ -235,10 +235,50 @@ app.get("/api/profile", requireAuth, async (req, res) => {
       : null,
     avatarType: user.avatarType || null,
     avatarValue: user.avatarValue || null,
+    towerSkin: user.towerSkin || "default",
+    equippedBadge: user.equippedBadge || null,
   });
 });
 
 const AVATAR_TEMPLATE_IDS = ["1", "2", "3", "4", "5"];
+const TOWER_SKINS = ["default", "castle", "lego"];
+const BADGE_TIERS = [10, 50, 100, 200, 300, 400, 500];
+
+app.post("/api/profile/tower-skin", requireAuth, async (req, res) => {
+  const { skin } = req.body;
+  if (!TOWER_SKINS.includes(skin)) {
+    return res.status(400).json({ error: "デザインが正しくありません" });
+  }
+  await db
+    .collection("users")
+    .updateOne({ _id: new ObjectId(req.session.userId) }, { $set: { towerSkin: skin } });
+  res.json({ towerSkin: skin });
+});
+
+app.post("/api/profile/badge", requireAuth, async (req, res) => {
+  const { tier } = req.body;
+  const tierNumber = tier === null ? null : Number(tier);
+
+  if (tierNumber !== null && !BADGE_TIERS.includes(tierNumber)) {
+    return res.status(400).json({ error: "バッジが正しくありません" });
+  }
+  if (tierNumber !== null) {
+    const count = await db
+      .collection("records")
+      .countDocuments({ userId: req.session.userId });
+    if (count < tierNumber) {
+      return res.status(400).json({ error: "まだ達成していないバッジだよ" });
+    }
+  }
+
+  await db
+    .collection("users")
+    .updateOne(
+      { _id: new ObjectId(req.session.userId) },
+      { $set: { equippedBadge: tierNumber } }
+    );
+  res.json({ equippedBadge: tierNumber });
+});
 
 app.post("/api/profile/avatar", requireAuth, async (req, res) => {
   const { avatarType, avatarValue } = req.body;

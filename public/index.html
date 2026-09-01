@@ -105,7 +105,10 @@
     <header class="app-header">
       <div>
         <h1>がんばれ受験タワー</h1>
-        <p id="welcome-text" class="welcome-text"></p>
+        <p id="welcome-text" class="welcome-text">
+          <span id="welcome-text-greeting"></span>
+          <span id="welcome-badge-icon" class="welcome-badge-icon" hidden></span>
+        </p>
       </div>
       <div class="header-right">
         <div id="streak-badge" class="streak-badge">🔥 0日連続</div>
@@ -151,7 +154,9 @@
       </div>
     </div>
 
-    <div class="tower-area">
+    <p id="tower-theme-label" class="tower-theme-label"></p>
+    <div id="tower-area" class="tower-area">
+      <div id="tower-landmark" class="tower-landmark"></div>
       <div id="tower" class="tower"></div>
     </div>
     <p id="total-info" class="total-info">まだ記録がありません</p>
@@ -192,7 +197,7 @@
     <div class="complete-content">
       <h2 id="complete-title">お疲れ様！</h2>
       <p id="complete-message" class="complete-message"></p>
-      <div class="tower-area">
+      <div id="complete-tower-area" class="tower-area">
         <div id="complete-tower" class="tower"></div>
       </div>
       <button id="back-home-btn" class="action-btn">ホームにもどる</button>
@@ -394,6 +399,30 @@
       </div>
     </div>
 
+    <div class="tower-skin-card">
+      <p>タワーのデザイン</p>
+      <div class="tower-skin-row">
+        <button class="tower-skin-option" data-skin="default">
+          <span class="tower-skin-preview tower-skin-preview-default"></span>
+          <span class="tower-skin-name">ノーマル</span>
+        </button>
+        <button class="tower-skin-option" data-skin="castle">
+          <span class="tower-skin-preview tower-skin-preview-castle"></span>
+          <span class="tower-skin-name">おしろ</span>
+        </button>
+        <button class="tower-skin-option" data-skin="lego">
+          <span class="tower-skin-preview tower-skin-preview-lego"></span>
+          <span class="tower-skin-name">ブロック</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="badge-case-card">
+      <p>バッジコレクション</p>
+      <p class="badge-case-hint">タワーが積みあがるとゲットできるよ。タップすると名前の横につけられるよ</p>
+      <div id="badge-case-grid" class="badge-case-grid"></div>
+    </div>
+
     <div class="friend-code-card">
       <p>あなたのフレンドコード</p>
       <div id="profile-friend-code" class="friend-code-display"></div>
@@ -452,6 +481,20 @@
       <button id="chat-send-btn" class="action-btn">送信</button>
     </div>
   </section>
+
+  <!-- お祝い演出（紙吹雪・バッジ獲得） -->
+  <div id="confetti-container" class="confetti-container" hidden></div>
+  <div id="celebration-toast" class="celebration-toast" hidden></div>
+
+  <div id="badge-reveal-overlay" class="badge-reveal-overlay" hidden>
+    <div class="badge-reveal-box">
+      <p class="badge-reveal-label">プレゼントがとどいたよ！</p>
+      <div id="badge-reveal-icon" class="badge-reveal-icon"></div>
+      <p id="badge-reveal-name" class="badge-reveal-name"></p>
+      <p id="badge-reveal-desc" class="badge-reveal-desc"></p>
+      <button id="badge-reveal-close-btn" class="action-btn">やったー！</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

@@ -23,6 +23,39 @@ const EVENT_CATEGORIES = {
 };
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
+const BADGE_TIERS = [
+  { tier: 10, icon: "🥉", name: "はじめの一歩", desc: "10段達成！", grad: "linear-gradient(135deg,#d7b98e,#a97c50)" },
+  { tier: 50, icon: "🥈", name: "積み上げ職人", desc: "50段達成！", grad: "linear-gradient(135deg,#e0e0e0,#9e9e9e)" },
+  { tier: 100, icon: "🥇", name: "百段の塔", desc: "100段達成！", grad: "linear-gradient(135deg,#ffe082,#ffb300)" },
+  { tier: 200, icon: "💎", name: "ダイヤの塔", desc: "200段達成！", grad: "linear-gradient(135deg,#b3e5fc,#0288d1)" },
+  { tier: 300, icon: "👑", name: "王様の塔", desc: "300段達成！", grad: "linear-gradient(135deg,#e1bee7,#8e24aa)" },
+  { tier: 400, icon: "🌟", name: "伝説の建築士", desc: "400段達成！", grad: "linear-gradient(135deg,#ff8a65,#ff5252,#7c4dff)" },
+  { tier: 500, icon: "🏆", name: "殿堂入りタワー", desc: "500段達成！", grad: "linear-gradient(135deg,#fff176,#ff8f00,#7c4dff,#fff176)" },
+];
+
+const WORLD_THEMES = [
+  { min: 0, name: "はらっぱ", emoji: "🌱", bg: "linear-gradient(#bdeaff,#eaffea)" },
+  { min: 10, name: "にほん", emoji: "⛩️", bg: "linear-gradient(#ffe0b2,#fff3e0)" },
+  { min: 50, name: "フランス", emoji: "🗼", bg: "linear-gradient(#dcedc8,#f1f8e9)" },
+  { min: 100, name: "エジプト", emoji: "🐫", bg: "linear-gradient(#ffe082,#fff8e1)" },
+  { min: 200, name: "アメリカ", emoji: "🗽", bg: "linear-gradient(#b3e5fc,#e1f5fe)" },
+  { min: 300, name: "やまのくに", emoji: "🏔️", bg: "linear-gradient(#cfd8dc,#eceff1)" },
+  { min: 400, name: "たいきけん", emoji: "🌌", bg: "linear-gradient(#7986cb,#303f9f)" },
+  { min: 500, name: "うちゅう", emoji: "🚀", bg: "linear-gradient(#0d1333,#1a237e)" },
+];
+
+function currentWorldTheme(blockCount) {
+  let theme = WORLD_THEMES[0];
+  WORLD_THEMES.forEach((t) => {
+    if (blockCount >= t.min) theme = t;
+  });
+  return theme;
+}
+
+function badgeInfo(tier) {
+  return BADGE_TIERS.find((b) => b.tier === tier) || null;
+}
+
 let currentUserName = null;
 let myUserId = null;
 let profile = null;
@@ -189,6 +222,8 @@ function blockHeight(minutes) {
 }
 
 function renderTower(container, recordList, highlightLastAsNew) {
+  const skin = profile && profile.towerSkin ? profile.towerSkin : "default";
+  container.className = `tower tower-skin-${skin}`;
   container.innerHTML = "";
   const recent = recordList.slice(-30); // 表示は直近30件まで
   recent.forEach((r, index) => {
@@ -197,6 +232,12 @@ function renderTower(container, recordList, highlightLastAsNew) {
     block.style.background = SUBJECT_COLORS[r.subject];
     block.style.height = blockHeight(r.minutes) + "px";
     block.title = `${r.date} ${r.subject} ${r.minutes}分`;
+
+    const icon = document.createElement("span");
+    icon.className = "tower-block-icon";
+    icon.textContent = SUBJECT_ICONS[r.subject];
+    block.appendChild(icon);
+
     if (highlightLastAsNew && index === recent.length - 1) {
       block.classList.add("new");
     }
@@ -206,8 +247,19 @@ function renderTower(container, recordList, highlightLastAsNew) {
 
 // ---------- ホーム画面 ----------
 
+function renderTowerTheme() {
+  const theme = currentWorldTheme(records.length);
+  const area = document.getElementById("tower-area");
+  area.style.background = theme.bg;
+  document.getElementById("tower-landmark").textContent = theme.emoji;
+  document.getElementById(
+    "tower-theme-label"
+  ).textContent = `${theme.emoji} ${theme.name}を たびしています（${records.length}段）`;
+}
+
 function renderHome() {
   renderTower(document.getElementById("tower"), records, false);
+  renderTowerTheme();
 
   const totalMinutes = records.reduce((sum, r) => sum + r.minutes, 0);
   const totalInfo = document.getElementById("total-info");
@@ -221,6 +273,7 @@ function renderHome() {
 
   renderCountdown();
   renderGoal();
+  renderWelcomeBadge();
 }
 
 function selectSubject(subject) {
@@ -405,12 +458,71 @@ async function recordManualMinutes() {
 
 // ---------- 記録完了画面 ----------
 
+function createConfettiBurst() {
+  const container = document.getElementById("confetti-container");
+  container.innerHTML = "";
+  container.hidden = false;
+  const colors = ["#ff6b81", "#4a90e2", "#4caf50", "#ffa726", "#6c63ff", "#ffd54f"];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "vw";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = 1.8 + Math.random() * 1.4 + "s";
+    piece.style.animationDelay = Math.random() * 0.4 + "s";
+    piece.style.setProperty("--start-rotate", `${Math.random() * 360}deg`);
+    container.appendChild(piece);
+  }
+  setTimeout(() => {
+    container.hidden = true;
+    container.innerHTML = "";
+  }, 3400);
+}
+
+function showCelebrationToast(text) {
+  createConfettiBurst();
+  const toast = document.getElementById("celebration-toast");
+  toast.textContent = text;
+  toast.hidden = false;
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      toast.hidden = true;
+    }, 400);
+  }, 2600);
+}
+
+function showBadgeReveal(badge) {
+  createConfettiBurst();
+  const overlay = document.getElementById("badge-reveal-overlay");
+  const iconEl = document.getElementById("badge-reveal-icon");
+  iconEl.textContent = badge.icon;
+  iconEl.style.background = badge.grad;
+  document.getElementById("badge-reveal-name").textContent = badge.name;
+  document.getElementById("badge-reveal-desc").textContent = badge.desc;
+  overlay.hidden = false;
+}
+
 function showCompleteScreen(subject, minutes) {
   document.getElementById(
     "complete-message"
   ).textContent = `${subject} を ${minutes}分がんばったね！`;
   renderTower(document.getElementById("complete-tower"), records, true);
   switchScreen("complete-screen");
+
+  const completeTowerArea = document.getElementById("complete-tower-area");
+  completeTowerArea.classList.remove("focus-pulse");
+  void completeTowerArea.offsetWidth;
+  completeTowerArea.classList.add("focus-pulse");
+
+  const newCount = records.length;
+  const newlyUnlocked = BADGE_TIERS.find((b) => b.tier === newCount);
+  if (newlyUnlocked) {
+    setTimeout(() => showBadgeReveal(newlyUnlocked), 500);
+  } else if (newCount > 0 && newCount % 20 === 0) {
+    setTimeout(() => showCelebrationToast(`${newCount}段達成！！`), 300);
+  }
 }
 
 // ---------- 履歴・カレンダー画面 ----------
@@ -1232,6 +1344,85 @@ async function saveAvatar(avatarType, avatarValue) {
   msg.textContent = "アイコンを変えたよ！";
 }
 
+async function saveTowerSkin(skin) {
+  const res = await fetch("/api/profile/tower-skin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skin }),
+  });
+  if (!res.ok) return;
+  const data = await res.json();
+  profile.towerSkin = data.towerSkin;
+  renderTowerSkinPicker();
+}
+
+async function equipBadge(tier) {
+  const res = await fetch("/api/profile/badge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tier }),
+  });
+  if (!res.ok) return;
+  const data = await res.json();
+  profile.equippedBadge = data.equippedBadge;
+  renderBadgeCase();
+  renderWelcomeBadge();
+}
+
+function renderTowerSkinPicker() {
+  document.querySelectorAll(".tower-skin-option").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.skin === (profile.towerSkin || "default"));
+  });
+}
+
+function renderBadgeCase() {
+  const grid = document.getElementById("badge-case-grid");
+  grid.innerHTML = "";
+  const blockCount = records.length;
+
+  BADGE_TIERS.forEach((b) => {
+    const unlocked = blockCount >= b.tier;
+    const card = document.createElement("button");
+    card.className = "badge-case-item" + (unlocked ? "" : " locked");
+    if (unlocked) {
+      card.style.background = b.grad;
+    }
+
+    const icon = document.createElement("div");
+    icon.className = "badge-case-icon";
+    icon.textContent = unlocked ? b.icon : "🔒";
+    card.appendChild(icon);
+
+    const label = document.createElement("div");
+    label.className = "badge-case-label";
+    label.textContent = unlocked ? `${b.tier}段` : `${b.tier}段`;
+    card.appendChild(label);
+
+    if (unlocked && profile.equippedBadge === b.tier) {
+      card.classList.add("equipped");
+    }
+
+    if (unlocked) {
+      card.addEventListener("click", () => {
+        equipBadge(profile.equippedBadge === b.tier ? null : b.tier);
+      });
+    }
+
+    grid.appendChild(card);
+  });
+}
+
+function renderWelcomeBadge() {
+  const el = document.getElementById("welcome-badge-icon");
+  if (profile && profile.equippedBadge) {
+    const info = badgeInfo(profile.equippedBadge);
+    el.textContent = info ? `${info.icon} ${info.name}` : "";
+    el.hidden = !info;
+  } else {
+    el.hidden = true;
+  }
+}
+
 async function selectTemplateAvatar(templateId) {
   await saveAvatar("template", templateId);
   document.getElementById("avatar-picker").hidden = true;
@@ -1403,6 +1594,8 @@ async function renderProfileScreen() {
   await Promise.all([fetchProfile(), fetchFriendsData()]);
   renderProfile();
   renderFriendsSection();
+  renderTowerSkinPicker();
+  renderBadgeCase();
 }
 
 async function sendFriendRequest() {
@@ -1603,6 +1796,14 @@ function setupEvents() {
   document
     .getElementById("avatar-upload-input")
     .addEventListener("change", handleAvatarUpload);
+  document.querySelectorAll(".tower-skin-option").forEach((btn) => {
+    btn.addEventListener("click", () => saveTowerSkin(btn.dataset.skin));
+  });
+  document
+    .getElementById("badge-reveal-close-btn")
+    .addEventListener("click", () => {
+      document.getElementById("badge-reveal-overlay").hidden = true;
+    });
 
   document
     .getElementById("chat-send-btn")
@@ -1739,7 +1940,7 @@ async function handleResetSubmit() {
 async function enterApp(name, id) {
   currentUserName = name;
   myUserId = id;
-  document.getElementById("welcome-text").textContent = `ようこそ、${name}さん`;
+  document.getElementById("welcome-text-greeting").textContent = `ようこそ、${name}さん`;
   await Promise.all([
     fetchRecords(),
     fetchNotes(),
@@ -1747,7 +1948,9 @@ async function enterApp(name, id) {
     fetchExamDay(),
     fetchEvents(),
     fetchScores(),
+    fetchProfile(),
   ]);
+  renderWelcomeBadge();
   switchScreen("home-screen");
 }
 
