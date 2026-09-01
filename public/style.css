@@ -1383,3 +1383,118 @@ body {
 .chat-message-row.chat-message-other {
   align-self: flex-start;
 }
+
+/* きろく: がんばりノート(日ごとのメモ一覧) */
+.note-feed-card {
+  width: 100%;
+  background: #fffaf0;
+  border: 2px dashed #d8c9a3;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.note-feed-title {
+  margin: 0 0 2px;
+  font-size: 16px;
+  color: #8d6e3f;
+}
+
+.note-feed-sub {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #a89670;
+}
+
+.note-feed-item {
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(141, 110, 63, 0.1);
+  border-left: 4px solid #d8c9a3;
+}
+
+.note-feed-date {
+  font-size: 11px;
+  color: #b39b6b;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.note-feed-text {
+  font-size: 14px;
+  color: #5a4a2f;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* せいせき: せいせきコメント一覧 */
+.score-comment-feed-card {
+  width: 100%;
+  background: linear-gradient(135deg, #fff8e1, #fff0f5);
+  border: 2px solid #ffe0b2;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.score-comment-feed-title {
+  margin: 0 0 2px;
+  font-size: 16px;
+  color: #d68910;
+}
+
+.score-comment-feed-sub {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #c8a165;
+}
+
+.score-comment-item {
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-left: 5px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
+.score-comment-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.score-comment-subject {
+  font-size: 11px;
+  font-weight: bold;
+  color: white;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+.score-comment-score {
+  font-size: 13px;
+  font-weight: bold;
+  color: #d68910;
+}
+
+.score-comment-date {
+  font-size: 11px;
+  color: #aaa;
+  margin-left: auto;
+}
+
+.score-comment-text {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+  word-break: break-word;
+}

@@ -755,6 +755,36 @@ function renderWeeklyChart() {
   });
 }
 
+function renderNoteFeed() {
+  const list = document.getElementById("note-feed-list");
+  list.innerHTML = "";
+  const entries = Object.entries(notes).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+
+  if (entries.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだメモがないよ。カレンダーの日付から書いてみよう！</p>`;
+    return;
+  }
+
+  entries.forEach(([date, text]) => {
+    const d = new Date(date + "T00:00:00");
+    const card = document.createElement("div");
+    card.className = "note-feed-item";
+
+    const dateEl = document.createElement("div");
+    dateEl.className = "note-feed-date";
+    dateEl.textContent = `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS[d.getDay()]})`;
+    card.appendChild(dateEl);
+
+    const textEl = document.createElement("div");
+    textEl.className = "note-feed-text";
+    textEl.textContent = text;
+    card.appendChild(textEl);
+
+    card.addEventListener("click", () => showDayDetail(date));
+    list.appendChild(card);
+  });
+}
+
 function renderHistory() {
   const streak = calcStreak(records);
   document.getElementById(
@@ -763,9 +793,60 @@ function renderHistory() {
   renderWeeklyChart();
   renderCalendar();
   renderSubjectTotals();
+  renderNoteFeed();
 }
 
 // ---------- せいせき画面 ----------
+
+function renderScoreCommentFeed() {
+  const list = document.getElementById("score-comment-feed-list");
+  list.innerHTML = "";
+  const commented = scores
+    .filter((s) => s.comment && s.comment.trim() !== "")
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  if (commented.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだコメントつきのきろくがないよ</p>`;
+    return;
+  }
+
+  commented.forEach((s) => {
+    const card = document.createElement("div");
+    card.className = "score-comment-item";
+    card.style.borderLeftColor = SUBJECT_COLORS[s.subject];
+
+    const top = document.createElement("div");
+    top.className = "score-comment-top";
+
+    const subjectBadge = document.createElement("span");
+    subjectBadge.className = "score-comment-subject";
+    subjectBadge.style.background = SUBJECT_COLORS[s.subject];
+    subjectBadge.textContent = `${SUBJECT_ICONS[s.subject]} ${s.subject}`;
+    top.appendChild(subjectBadge);
+
+    const scoreEl = document.createElement("span");
+    scoreEl.className = "score-comment-score";
+    const hensachiText =
+      s.hensachi !== null && s.hensachi !== undefined ? ` ・偏差値${s.hensachi}` : "";
+    scoreEl.textContent = `✨ ${s.score}点${hensachiText}`;
+    top.appendChild(scoreEl);
+
+    const dateEl = document.createElement("span");
+    dateEl.className = "score-comment-date";
+    dateEl.textContent = s.date;
+    top.appendChild(dateEl);
+
+    card.appendChild(top);
+
+    const textEl = document.createElement("div");
+    textEl.className = "score-comment-text";
+    textEl.textContent = s.comment;
+    card.appendChild(textEl);
+
+    list.appendChild(card);
+  });
+}
 
 function selectGradeSubject(subject) {
   selectedGradeSubject = subject;
@@ -933,6 +1014,8 @@ function renderScoreList(subjectScores) {
 }
 
 function renderGradesScreen() {
+  renderScoreCommentFeed();
+
   document.querySelectorAll("#grades-screen .subject-btn").forEach((btn) => {
     btn.classList.toggle("selected", btn.dataset.subject === selectedGradeSubject);
   });
