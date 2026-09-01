@@ -983,13 +983,12 @@ function renderWeeklyChart() {
   });
 }
 
-function renderNoteFeed() {
-  const list = document.getElementById("note-feed-list");
+function renderNoteFeedInto(list, notesObj, clickable) {
   list.innerHTML = "";
-  const entries = Object.entries(notes).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  const entries = Object.entries(notesObj).sort((a, b) => (a[0] < b[0] ? 1 : -1));
 
   if (entries.length === 0) {
-    list.innerHTML = `<p class="no-record-text">まだメモがないよ。カレンダーの日付から書いてみよう！</p>`;
+    list.innerHTML = `<p class="no-record-text">まだメモがないよ</p>`;
     return;
   }
 
@@ -1008,9 +1007,20 @@ function renderNoteFeed() {
     textEl.textContent = text;
     card.appendChild(textEl);
 
-    card.addEventListener("click", () => showDayDetail(date));
+    if (clickable) {
+      card.addEventListener("click", () => showDayDetail(date));
+    }
     list.appendChild(card);
   });
+}
+
+function renderNoteFeed() {
+  const list = document.getElementById("note-feed-list");
+  if (Object.keys(notes).length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだメモがないよ。カレンダーの日付から書いてみよう！</p>`;
+    return;
+  }
+  renderNoteFeedInto(list, notes, true);
 }
 
 function renderHistory() {
@@ -1026,10 +1036,9 @@ function renderHistory() {
 
 // ---------- せいせき画面 ----------
 
-function renderScoreCommentFeed() {
-  const list = document.getElementById("score-comment-feed-list");
+function renderScoreCommentFeedInto(list, scoresArr) {
   list.innerHTML = "";
-  const commented = scores
+  const commented = scoresArr
     .filter((s) => s.comment && s.comment.trim() !== "")
     .slice()
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
@@ -1074,6 +1083,10 @@ function renderScoreCommentFeed() {
 
     list.appendChild(card);
   });
+}
+
+function renderScoreCommentFeed() {
+  renderScoreCommentFeedInto(document.getElementById("score-comment-feed-list"), scores);
 }
 
 function selectGradeSubject(subject) {
@@ -1684,20 +1697,89 @@ function renderFriendsSection() {
     friendsList.innerHTML = `<p class="no-record-text">まだフレンドがいません</p>`;
   } else {
     friendsData.friends.forEach((f) => {
-      const row = document.createElement("div");
-      row.className = "friend-row clickable";
-      row.appendChild(createAvatarElement(f.avatarType, f.avatarValue, f.name, "avatar-icon"));
+      const card = document.createElement("div");
+      card.className = "friend-card";
 
+      const top = document.createElement("div");
+      top.className = "friend-card-top clickable";
+      top.appendChild(createAvatarElement(f.avatarType, f.avatarValue, f.name, "avatar-icon"));
       const label = document.createElement("span");
       label.textContent = `💬 ${f.name}`;
-      row.appendChild(label);
-
-      row.addEventListener("click", () =>
+      top.appendChild(label);
+      top.addEventListener("click", () =>
         openChat(f.id, f.name, f.avatarType, f.avatarValue)
       );
-      friendsList.appendChild(row);
+      card.appendChild(top);
+
+      const controls = document.createElement("div");
+      controls.className = "friend-card-controls";
+
+      const shareLabel = document.createElement("label");
+      shareLabel.className = "share-toggle";
+      const shareCheckbox = document.createElement("input");
+      shareCheckbox.type = "checkbox";
+      shareCheckbox.checked = f.iShareWithThem;
+      shareCheckbox.addEventListener("change", () =>
+        setShareWithFriend(f.id, shareCheckbox.checked)
+      );
+      shareLabel.appendChild(shareCheckbox);
+      shareLabel.appendChild(document.createTextNode("この人に見せる"));
+      controls.appendChild(shareLabel);
+
+      if (f.sharesWithMe) {
+        const viewBtn = document.createElement("button");
+        viewBtn.className = "small-inline-btn view-progress-btn";
+        viewBtn.textContent = "🌟 がんばりを見る";
+        viewBtn.addEventListener("click", () => openFriendProgress(f.id, f.name));
+        controls.appendChild(viewBtn);
+      }
+
+      card.appendChild(controls);
+      friendsList.appendChild(card);
     });
   }
+}
+
+async function setShareWithFriend(friendId, share) {
+  await fetch("/api/friends/share", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ friendId, share }),
+  });
+  const friend = friendsData.friends.find((f) => f.id === friendId);
+  if (friend) friend.iShareWithThem = share;
+}
+
+async function openFriendProgress(friendId, friendName) {
+  document.getElementById(
+    "friend-progress-title"
+  ).textContent = `${friendName}さんのがんばり`;
+
+  const noteList = document.getElementById("friend-progress-note-list");
+  const scoreList = document.getElementById("friend-progress-score-list");
+  noteList.innerHTML = "";
+  scoreList.innerHTML = "";
+
+  const [notesRes, scoresRes] = await Promise.all([
+    fetch(`/api/friends/${friendId}/notes`),
+    fetch(`/api/friends/${friendId}/scores`),
+  ]);
+
+  if (notesRes.ok) {
+    const friendNotes = await notesRes.json();
+    renderNoteFeedInto(noteList, friendNotes, false);
+  } else {
+    noteList.innerHTML = `<p class="no-record-text">見られませんでした</p>`;
+  }
+
+  if (scoresRes.ok) {
+    const friendScores = await scoresRes.json();
+    renderScoreCommentFeedInto(scoreList, friendScores);
+  } else {
+    scoreList.innerHTML = `<p class="no-record-text">見られませんでした</p>`;
+  }
+
+  switchScreen("friend-progress-screen");
 }
 
 async function refreshFriendsSection() {
@@ -1909,6 +1991,9 @@ function setupEvents() {
     .getElementById("friend-request-btn")
     .addEventListener("click", sendFriendRequest);
   document.getElementById("chat-back-btn").addEventListener("click", closeChat);
+  document
+    .getElementById("friend-progress-back-btn")
+    .addEventListener("click", () => switchScreen("profile-screen"));
 
   document
     .getElementById("avatar-change-btn")

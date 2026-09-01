@@ -1293,6 +1293,54 @@ body {
   background: #eeecff;
 }
 
+.friend-card {
+  background: #faf9ff;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.friend-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.friend-card-top:active {
+  background: #eeecff;
+}
+
+.friend-card-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid #ece9fb;
+}
+
+.share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+}
+
+.share-toggle input {
+  cursor: pointer;
+}
+
+.view-progress-btn {
+  background: #fff3cd;
+  color: #8d6e3f;
+  white-space: nowrap;
+}
+
 .small-inline-btn {
   border: none;
   border-radius: 8px;

@@ -320,12 +320,21 @@ app.get("/api/friends", requireAuth, async (req, res) => {
     .collection("users")
     .find({ _id: { $in: friendIds.map((id) => new ObjectId(id)) } })
     .toArray();
-  const friends = friendUsers.map((u) => ({
-    id: u._id.toString(),
-    name: u.name,
-    avatarType: u.avatarType || null,
-    avatarValue: u.avatarValue || null,
-  }));
+  const friends = friendUsers.map((u) => {
+    const friendId = u._id.toString();
+    const friendship = friendships.find(
+      (f) => f.userA === friendId || f.userB === friendId
+    );
+    const shareMap = (friendship && friendship.share) || {};
+    return {
+      id: friendId,
+      name: u.name,
+      avatarType: u.avatarType || null,
+      avatarValue: u.avatarValue || null,
+      iShareWithThem: Boolean(shareMap[myId]),
+      sharesWithMe: Boolean(shareMap[friendId]),
+    };
+  });
 
   const incoming = await db
     .collection("friendRequests")
@@ -415,6 +424,7 @@ app.post("/api/friends/accept", requireAuth, async (req, res) => {
     userA: request.fromUserId,
     userB: request.toUserId,
     createdAt: new Date(),
+    share: {}, // 誰が誰に「がんばりノート・せいせきコメント」を公開しているか(初期状態は非公開)
   });
   await db.collection("friendRequests").deleteOne({ _id: request._id });
 
@@ -430,6 +440,66 @@ app.post("/api/friends/reject", requireAuth, async (req, res) => {
     .deleteOne({ _id: new ObjectId(requestId), toUserId: myId, status: "pending" });
 
   res.json({ ok: true });
+});
+
+// このフレンドに自分のがんばりノート・せいせきコメントを見せるかどうかを設定する
+app.post("/api/friends/share", requireAuth, async (req, res) => {
+  const { friendId, share } = req.body;
+  const myId = req.session.userId;
+
+  const friendship = await db.collection("friendships").findOne({
+    $or: [
+      { userA: myId, userB: friendId },
+      { userA: friendId, userB: myId },
+    ],
+  });
+  if (!friendship) {
+    return res.status(400).json({ error: "フレンドが見つかりませんでした" });
+  }
+
+  await db
+    .collection("friendships")
+    .updateOne({ _id: friendship._id }, { $set: { [`share.${myId}`]: Boolean(share) } });
+
+  res.json({ ok: true, share: Boolean(share) });
+});
+
+// フレンドが公開してくれている場合だけ、そのフレンドのデータを見られるようにする関所
+async function requireSharedAccess(req, res, next) {
+  const myId = req.session.userId;
+  const friendId = req.params.friendId;
+
+  const friendship = await db.collection("friendships").findOne({
+    $or: [
+      { userA: myId, userB: friendId },
+      { userA: friendId, userB: myId },
+    ],
+  });
+  const shareMap = (friendship && friendship.share) || {};
+  if (!friendship || !shareMap[friendId]) {
+    return res.status(403).json({ error: "この人はまだ公開していません" });
+  }
+  next();
+}
+
+app.get("/api/friends/:friendId/notes", requireAuth, requireSharedAccess, async (req, res) => {
+  const notes = await db
+    .collection("notes")
+    .find({ userId: req.params.friendId })
+    .toArray();
+  const map = {};
+  notes.forEach((n) => {
+    map[n.date] = n.text;
+  });
+  res.json(map);
+});
+
+app.get("/api/friends/:friendId/scores", requireAuth, requireSharedAccess, async (req, res) => {
+  const scores = await db
+    .collection("scores")
+    .find({ userId: req.params.friendId })
+    .toArray();
+  res.json(scores.map(toClientDoc));
 });
 
 // ---------- チャット ----------
