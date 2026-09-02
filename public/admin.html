@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>利用状況</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Meiryo", sans-serif;
+      background: #fdf3e7;
+      color: #3a3a3a;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .wrap { width: 100%; max-width: 420px; }
+    h1 { font-size: 20px; margin: 0 0 16px; text-align: center; }
+
+    .key-box {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .key-box input {
+      width: 100%;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .key-box button {
+      width: 100%;
+      background: #6c63ff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #message { color: #e57373; font-size: 13px; text-align: center; margin: 0 0 10px; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .stat-card .value { font-size: 24px; font-weight: bold; color: #6c63ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>📊 利用状況</h1>
+
+    <div class="key-box">
+      <input id="key-input" type="password" placeholder="管理キー" />
+      <button id="load-btn">見る</button>
+    </div>
+
+    <p id="message" hidden></p>
+
+    <div id="stats" class="stat-grid" hidden>
+      <div class="stat-card"><div class="label">総ユーザー数</div><div class="value" id="stat-total"></div></div>
+      <div class="stat-card"><div class="label">直近7日で利用</div><div class="value" id="stat-active"></div></div>
+      <div class="stat-card"><div class="label">保護者アカウント</div><div class="value" id="stat-parent"></div></div>
+      <div class="stat-card"><div class="label">子供アカウント</div><div class="value" id="stat-child"></div></div>
+      <div class="stat-card"><div class="label">総記録数</div><div class="value" id="stat-records"></div></div>
+      <div class="stat-card"><div class="label">総勉強時間(分)</div><div class="value" id="stat-minutes"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const keyInput = document.getElementById("key-input");
+    const msg = document.getElementById("message");
+    const statsBox = document.getElementById("stats");
+
+    const savedKey = localStorage.getItem("adminKey");
+    if (savedKey) keyInput.value = savedKey;
+
+    async function loadStats() {
+      const key = keyInput.value.trim();
+      msg.hidden = true;
+      statsBox.hidden = true;
+
+      const res = await fetch(`/api/admin/stats?key=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = data.error || "見られませんでした";
+        msg.hidden = false;
+        return;
+      }
+
+      localStorage.setItem("adminKey", key);
+      document.getElementById("stat-total").textContent = data.totalUsers;
+      document.getElementById("stat-active").textContent = data.activeLast7Days;
+      document.getElementById("stat-parent").textContent = data.parentUsers;
+      document.getElementById("stat-child").textContent = data.childUsers;
+      document.getElementById("stat-records").textContent = data.totalRecords;
+      document.getElementById("stat-minutes").textContent = data.totalMinutes;
+      statsBox.hidden = false;
+    }
+
+    document.getElementById("load-btn").addEventListener("click", loadStats);
+    keyInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadStats();
+    });
+
+    if (savedKey) loadStats();
+  </script>
+</body>
+</html>

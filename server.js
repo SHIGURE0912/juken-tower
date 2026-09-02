@@ -14,6 +14,7 @@ const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/juken-tower";
 const SESSION_SECRET = process.env.SESSION_SECRET || "juken-tower-himitsu-key";
 const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || "juken-tower-encryption-key";
+const ADMIN_KEY = process.env.ADMIN_KEY || "juken-tower-admin-2026";
 const SUBJECTS = ["国語", "算数", "理科", "社会"];
 
 let db;
@@ -1122,6 +1123,41 @@ app.post("/api/exam-day", requireAuth, async (req, res) => {
     .collection("examDays")
     .updateOne({ userId: req.session.userId }, { $set: examDoc }, { upsert: true });
   res.json(examDoc);
+});
+
+// ---------- 開発者向け利用状況（キーを知っている人だけが見られる）----------
+
+app.get("/api/admin/stats", async (req, res) => {
+  if (req.query.key !== ADMIN_KEY) {
+    return res.status(403).json({ error: "キーが正しくありません" });
+  }
+
+  const totalUsers = await db.collection("users").countDocuments();
+  const parentUsers = await db.collection("users").countDocuments({ accountType: "parent" });
+  const childUsers = totalUsers - parentUsers;
+
+  const totalRecords = await db.collection("records").countDocuments();
+  const minutesAgg = await db
+    .collection("records")
+    .aggregate([{ $group: { _id: null, total: { $sum: "$minutes" } } }])
+    .toArray();
+  const totalMinutes = minutesAgg.length > 0 ? minutesAgg[0].total : 0;
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().slice(0, 10);
+  const activeUserIds = await db
+    .collection("records")
+    .distinct("userId", { date: { $gte: sevenDaysAgoStr } });
+
+  res.json({
+    totalUsers,
+    parentUsers,
+    childUsers,
+    totalRecords,
+    totalMinutes,
+    activeLast7Days: activeUserIds.length,
+  });
 });
 
 // ---------- 起動 ----------
