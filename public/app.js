@@ -1632,6 +1632,7 @@ function renderProfile() {
   document.getElementById("profile-account-type").textContent =
     profile.accountType === "parent" ? "保護者" : "子供";
   document.getElementById("become-parent-card").hidden = profile.accountType === "parent";
+  document.getElementById("support-link").hidden = profile.accountType !== "parent";
 
   document.querySelectorAll(".reveal-btn").forEach((btn) => {
     btn.textContent = "表示";
