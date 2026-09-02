@@ -1,6 +1,6 @@
 {
-  "name": "がんばれ受験タワー",
-  "short_name": "受験タワー",
+  "name": "スタディ記録タワー",
+  "short_name": "記録タワー",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fdf3e7",

@@ -1135,7 +1135,7 @@ async function start() {
   console.log("データベースにつながりました");
 
   app.listen(PORT, HOST, () => {
-    console.log(`受験タワーアプリが起動しました: http://localhost:${PORT}`);
+    console.log(`スタディ記録タワーアプリが起動しました: http://localhost:${PORT}`);
   });
 }
 
