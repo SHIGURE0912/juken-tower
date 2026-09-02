@@ -22,6 +22,7 @@ const EVENT_CATEGORIES = {
   other: { label: "その他", icon: "📌", color: "#9575cd" },
 };
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const CHAT_BG_COST = 6;
 
 const BADGE_TIERS = [
   { tier: 10, icon: "🥉", name: "はじめの一歩", desc: "10段達成！", grad: "linear-gradient(135deg,#d7b98e,#a97c50)" },
@@ -1985,6 +1986,7 @@ async function openChat(friendId, friendName, avatarType, avatarValue) {
   currentChatFriendAvatar = { type: avatarType, value: avatarValue };
   document.getElementById("chat-friend-name").textContent = friendName;
   await loadMessages();
+  await loadChatBackground();
   switchScreen("chat-screen");
 
   if (chatPollInterval) clearInterval(chatPollInterval);
@@ -1996,6 +1998,40 @@ function closeChat() {
   chatPollInterval = null;
   currentChatFriendId = null;
   switchScreen("profile-screen");
+}
+
+async function loadChatBackground() {
+  const container = document.getElementById("chat-messages");
+  container.style.backgroundImage = "";
+  if (!currentChatFriendId) return;
+  const res = await fetch(`/api/chat-background/${currentChatFriendId}`);
+  if (!res.ok) return;
+  const { imageData } = await res.json();
+  if (imageData) {
+    container.style.backgroundImage = `url(${imageData})`;
+  }
+}
+
+async function changeChatBackground(file) {
+  if (!file || !currentChatFriendId) return;
+  const ok = window.confirm(
+    `${CHAT_BG_COST}ポイント使って、この画像をチャットの背景にしますか？`
+  );
+  if (!ok) return;
+
+  const imageData = await resizeImageFile(file, 900);
+  const res = await fetch(`/api/chat-background/${currentChatFriendId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageData }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || "背景を変えられませんでした");
+    return;
+  }
+  document.getElementById("chat-messages").style.backgroundImage = `url(${data.imageData})`;
+  if (profile) profile.points = data.points;
 }
 
 async function loadMessages() {
@@ -2243,6 +2279,18 @@ function setupEvents() {
     .addEventListener("change", async (e) => {
       const file = e.target.files[0];
       await sendChatImage(file);
+      e.target.value = "";
+    });
+  document
+    .getElementById("chat-bg-btn")
+    .addEventListener("click", () => {
+      document.getElementById("chat-bg-input").click();
+    });
+  document
+    .getElementById("chat-bg-input")
+    .addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      await changeChatBackground(file);
       e.target.value = "";
     });
 

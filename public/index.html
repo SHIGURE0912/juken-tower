@@ -592,8 +592,12 @@
   <section id="chat-screen" class="screen" hidden>
     <header class="app-header">
       <h1 id="chat-friend-name">チャット</h1>
-      <button id="chat-back-btn" class="logout-btn">もどる</button>
+      <div class="chat-header-buttons">
+        <button id="chat-bg-btn" class="chat-icon-btn" type="button" title="背景を変える（6ポイント）">🖼️</button>
+        <button id="chat-back-btn" class="logout-btn">もどる</button>
+      </div>
     </header>
+    <input id="chat-bg-input" type="file" accept="image/*" hidden />
 
     <div id="chat-messages" class="chat-messages"></div>
 

@@ -1400,6 +1400,9 @@ body {
   flex-direction: column;
   gap: 8px;
   padding-bottom: 70px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
 }
 
 .chat-bubble {
@@ -1463,6 +1466,18 @@ body {
   background: #f0eeff;
   font-size: 18px;
   cursor: pointer;
+}
+
+.chat-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-header-buttons .chat-icon-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
 }
 
 .chat-icon-btn:active {

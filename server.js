@@ -636,6 +636,45 @@ app.post("/api/messages/:friendId", requireAuth, async (req, res) => {
   });
 });
 
+// チャットの背景（自分だけに見える、フレンドごとの設定。変更するたびにポイントを消費する）
+const CHAT_BG_COST = 6;
+
+app.get("/api/chat-background/:friendId", requireAuth, async (req, res) => {
+  const bg = await db
+    .collection("chatBackgrounds")
+    .findOne({ userId: req.session.userId, friendId: req.params.friendId });
+  res.json({ imageData: bg ? bg.imageData : null });
+});
+
+app.post("/api/chat-background/:friendId", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  const friendId = req.params.friendId;
+  const { imageData } = req.body;
+
+  if (!(await areFriends(myId, friendId))) {
+    return res.status(403).json({ error: "フレンドではありません" });
+  }
+  if (typeof imageData !== "string" || !imageData.startsWith("data:image/")) {
+    return res.status(400).json({ error: "画像が正しくありません" });
+  }
+
+  const spent = await trySpendPoints(myId, CHAT_BG_COST);
+  if (!spent) {
+    return res.status(400).json({ error: `ポイントが足りません（${CHAT_BG_COST}ポイント必要）` });
+  }
+
+  await db
+    .collection("chatBackgrounds")
+    .updateOne(
+      { userId: myId, friendId },
+      { $set: { imageData, updatedAt: new Date() } },
+      { upsert: true }
+    );
+
+  const { balance } = await getPointsBalance(myId);
+  res.json({ ok: true, imageData, points: balance });
+});
+
 // ---------- 勉強記録 ----------
 
 app.get("/api/records", requireAuth, async (req, res) => {
