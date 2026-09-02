@@ -2749,6 +2749,9 @@ async function enterApp(name, id) {
 
 async function init() {
   setupEvents();
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+  }
   const me = await fetchMe();
   if (me.loggedIn) {
     await enterApp(me.name, me.id);
