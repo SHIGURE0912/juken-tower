@@ -225,6 +225,8 @@ app.get("/api/profile", requireAuth, async (req, res) => {
     return res.status(404).json({ error: "見つかりませんでした" });
   }
 
+  const { balance } = await getPointsBalance(req.session.userId);
+
   res.json({
     name: user.name,
     friendCode: user.friendCode,
@@ -237,6 +239,7 @@ app.get("/api/profile", requireAuth, async (req, res) => {
     avatarValue: user.avatarValue || null,
     towerSkin: user.towerSkin || "default",
     equippedBadge: user.equippedBadge || null,
+    points: balance,
   });
 });
 
@@ -662,6 +665,42 @@ app.post("/api/records", requireAuth, async (req, res) => {
   };
   const result = await db.collection("records").insertOne(doc);
   res.json(toClientDoc({ ...doc, _id: result.insertedId }));
+});
+
+// ---------- ポイント（30分勉強するごとに1ポイント）----------
+
+// 貯めたポイントはrecordsの合計時間から毎回計算する(spentだけ user ドキュメントに記録)ので、
+// ずれが起きにくい
+async function getPointsBalance(userId) {
+  const agg = await db
+    .collection("records")
+    .aggregate([
+      { $match: { userId } },
+      { $group: { _id: null, total: { $sum: "$minutes" } } },
+    ])
+    .toArray();
+  const totalMinutes = agg.length > 0 ? agg[0].total : 0;
+  const pointsEarned = Math.floor(totalMinutes / 30);
+
+  const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+  const pointsSpent = (user && user.pointsSpent) || 0;
+
+  return { totalMinutes, pointsEarned, pointsSpent, balance: pointsEarned - pointsSpent };
+}
+
+// ポイントを消費する。残高が足りなければ何もせずfalseを返す
+async function trySpendPoints(userId, amount) {
+  const { balance } = await getPointsBalance(userId);
+  if (balance < amount) return false;
+  await db
+    .collection("users")
+    .updateOne({ _id: new ObjectId(userId) }, { $inc: { pointsSpent: amount } });
+  return true;
+}
+
+app.get("/api/points", requireAuth, async (req, res) => {
+  const { balance } = await getPointsBalance(req.session.userId);
+  res.json({ points: balance });
 });
 
 // ---------- 日付ごとのメモ ----------

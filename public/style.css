@@ -1205,6 +1205,37 @@ body {
   border-bottom: none;
 }
 
+.points-card {
+  width: 100%;
+  background: linear-gradient(135deg, #fff3cd, #ffe082);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.points-card-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #8d6e3f;
+}
+
+.points-card-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #b8860b;
+}
+
+.points-card-hint {
+  font-size: 11px;
+  color: #a8894f;
+  width: 100%;
+}
+
 .profile-label {
   font-size: 13px;
   color: #888;

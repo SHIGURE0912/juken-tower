@@ -1626,6 +1626,7 @@ function renderProfile() {
   answerEl.dataset.revealed = "false";
 
   document.getElementById("profile-friend-code").textContent = profile.friendCode;
+  document.getElementById("profile-points").textContent = profile.points;
 
   document.querySelectorAll(".reveal-btn").forEach((btn) => {
     btn.textContent = "表示";
