@@ -477,6 +477,31 @@
       <span class="points-card-hint">30分勉強するごとに1ポイント</span>
     </div>
 
+    <div id="reward-manage-card" class="reward-manage-card" hidden>
+      <h3>🎁 ご褒美リストを管理</h3>
+      <button id="reward-create-toggle-btn" class="action-btn secondary-btn">
+        + 新しいご褒美を作る
+      </button>
+      <div id="reward-create-form" class="reward-create-form" hidden>
+        <input id="reward-title-input" type="text" placeholder="ご褒美の内容（例: アイスを買う）" />
+        <input id="reward-price-input" type="number" min="1" placeholder="必要なポイント" />
+        <label class="reward-repeatable-label">
+          <input id="reward-repeatable-input" type="checkbox" checked />
+          何回でも交換できる
+        </label>
+        <p class="reward-form-hint">チェックを外すと、一回交換したらリストから消えます</p>
+        <input id="reward-image-input" type="file" accept="image/*" />
+        <button id="reward-save-btn" class="action-btn">作成する</button>
+        <p id="reward-create-message" class="saved-msg"></p>
+      </div>
+      <div id="reward-manage-list" class="reward-card-list"></div>
+    </div>
+
+    <div class="reward-tickets-card">
+      <h3>🎫 未使用のご褒美</h3>
+      <div id="reward-tickets-list"></div>
+    </div>
+
     <div class="tower-skin-card">
       <p>タワーのデザイン</p>
       <div class="tower-skin-row">
@@ -614,6 +639,15 @@
       </div>
       <div id="friend-progress-comment-list" class="progress-comment-list"></div>
     </div>
+  </section>
+
+  <!-- 保護者のご褒美リスト閲覧・交換画面 -->
+  <section id="parent-rewards-screen" class="screen" hidden>
+    <header class="app-header">
+      <h1 id="parent-rewards-title">〇〇さんのご褒美リスト</h1>
+      <button id="parent-rewards-back-btn" class="logout-btn">もどる</button>
+    </header>
+    <div id="parent-rewards-list" class="reward-card-list"></div>
   </section>
 
   <!-- チャット画面 -->

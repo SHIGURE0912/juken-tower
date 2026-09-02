@@ -1789,6 +1789,14 @@ function buildFriendCard(f) {
     controls.appendChild(viewBtn);
   }
 
+  if (f.accountType === "parent") {
+    const rewardsBtn = document.createElement("button");
+    rewardsBtn.className = "small-inline-btn view-progress-btn";
+    rewardsBtn.textContent = "🎁 ご褒美を見る";
+    rewardsBtn.addEventListener("click", () => openParentRewards(f.id, f.name));
+    controls.appendChild(rewardsBtn);
+  }
+
   card.appendChild(controls);
   return card;
 }
@@ -1992,6 +2000,249 @@ async function renderProfileScreen() {
   renderTowerSkinPicker();
   renderBadgeCase();
   loadMyProgressComments();
+
+  document.getElementById("reward-manage-card").hidden = profile.accountType !== "parent";
+  if (profile.accountType === "parent") {
+    loadMyRewards();
+  }
+  await loadRewardTickets();
+  checkUnseenTicketBadge();
+}
+
+// ---------- ご褒美チケット ----------
+
+let unseenTicketPollInterval = null;
+let currentParentRewardsId = null;
+let currentParentRewardsName = null;
+
+function buildRewardCard(reward, footerContent) {
+  const card = document.createElement("div");
+  card.className = "reward-card";
+
+  const img = document.createElement("img");
+  img.className = "reward-card-image";
+  img.src = reward.imageData;
+  card.appendChild(img);
+
+  const body = document.createElement("div");
+  body.className = "reward-card-body";
+
+  const title = document.createElement("p");
+  title.className = "reward-card-title";
+  title.textContent = reward.title;
+  body.appendChild(title);
+
+  const footer = document.createElement("div");
+  footer.className = "reward-card-footer";
+  footer.appendChild(footerContent);
+  body.appendChild(footer);
+
+  card.appendChild(body);
+  return card;
+}
+
+async function loadMyRewards() {
+  const res = await fetch("/api/rewards");
+  if (!res.ok) return;
+  const rewards = await res.json();
+  renderRewardManageList(rewards);
+}
+
+function renderRewardManageList(rewards) {
+  const list = document.getElementById("reward-manage-list");
+  list.innerHTML = "";
+  if (rewards.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだご褒美がありません</p>`;
+    return;
+  }
+  rewards.forEach((r) => {
+    const footer = document.createElement("div");
+    footer.className = "reward-card-footer";
+
+    const price = document.createElement("span");
+    price.className = "reward-card-price";
+    price.textContent = `⭐ ${r.price}ポイント`;
+    footer.appendChild(price);
+
+    const sub = document.createElement("span");
+    sub.className = "reward-card-sub";
+    sub.textContent = r.repeatable ? "何回でも" : "一回きり";
+    footer.appendChild(sub);
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "small-delete-btn";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", async () => {
+      await fetch(`/api/rewards/${r.id}`, { method: "DELETE" });
+      await loadMyRewards();
+    });
+    footer.appendChild(delBtn);
+
+    list.appendChild(buildRewardCard(r, footer));
+  });
+}
+
+async function createReward() {
+  const titleInput = document.getElementById("reward-title-input");
+  const priceInput = document.getElementById("reward-price-input");
+  const repeatableInput = document.getElementById("reward-repeatable-input");
+  const imageInput = document.getElementById("reward-image-input");
+  const msg = document.getElementById("reward-create-message");
+
+  const title = titleInput.value.trim();
+  const price = Number(priceInput.value);
+  const file = imageInput.files[0];
+
+  if (!title) {
+    msg.textContent = "ご褒美の内容を入力してね";
+    return;
+  }
+  if (!Number.isFinite(price) || price <= 0) {
+    msg.textContent = "ポイント数を正しく入力してね";
+    return;
+  }
+  if (!file) {
+    msg.textContent = "画像を選んでね";
+    return;
+  }
+
+  const imageData = await resizeImageFile(file, 900);
+  const res = await fetch("/api/rewards", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      price,
+      repeatable: repeatableInput.checked,
+      imageData,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "作成できませんでした";
+    return;
+  }
+
+  msg.textContent = "";
+  titleInput.value = "";
+  priceInput.value = "";
+  repeatableInput.checked = true;
+  imageInput.value = "";
+  document.getElementById("reward-create-form").hidden = true;
+  await loadMyRewards();
+}
+
+async function openParentRewards(parentId, parentName) {
+  currentParentRewardsId = parentId;
+  currentParentRewardsName = parentName;
+  document.getElementById(
+    "parent-rewards-title"
+  ).textContent = `${parentName}さんのご褒美リスト`;
+
+  const list = document.getElementById("parent-rewards-list");
+  list.innerHTML = "";
+
+  const res = await fetch(`/api/parents/${parentId}/rewards`);
+  if (!res.ok) {
+    list.innerHTML = `<p class="no-record-text">見られませんでした</p>`;
+    switchScreen("parent-rewards-screen");
+    return;
+  }
+  const rewards = await res.json();
+  if (rewards.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだご褒美がないよ</p>`;
+  } else {
+    rewards.forEach((r) => {
+      const footer = document.createElement("div");
+      footer.className = "reward-card-footer";
+
+      const price = document.createElement("span");
+      price.className = "reward-card-price";
+      price.textContent = `⭐ ${r.price}ポイント`;
+      footer.appendChild(price);
+
+      const redeemBtn = document.createElement("button");
+      redeemBtn.className = "small-inline-btn";
+      redeemBtn.textContent = "交換する";
+      redeemBtn.addEventListener("click", () => redeemReward(parentId, r.id, r.price));
+      footer.appendChild(redeemBtn);
+
+      list.appendChild(buildRewardCard(r, footer));
+    });
+  }
+
+  switchScreen("parent-rewards-screen");
+}
+
+async function redeemReward(parentId, rewardId, price) {
+  const ok = window.confirm(`${price}ポイント使って、このご褒美と交換しますか？`);
+  if (!ok) return;
+
+  const res = await fetch(`/api/parents/${parentId}/rewards/${rewardId}/redeem`, {
+    method: "POST",
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || "交換できませんでした");
+    return;
+  }
+  if (profile) profile.points = data.points;
+  await openParentRewards(currentParentRewardsId, currentParentRewardsName);
+}
+
+async function loadRewardTickets() {
+  const res = await fetch("/api/reward-tickets");
+  if (!res.ok) return;
+  const tickets = await res.json();
+  renderRewardTicketList(tickets);
+}
+
+function renderRewardTicketList(tickets) {
+  const list = document.getElementById("reward-tickets-list");
+  list.innerHTML = "";
+  if (tickets.length === 0) {
+    list.innerHTML = `<p class="no-record-text">まだ交換したご褒美はないよ</p>`;
+    return;
+  }
+  const isParent = profile && profile.accountType === "parent";
+  tickets.forEach((t) => {
+    const footer = document.createElement("div");
+    footer.className = "reward-card-footer";
+
+    const sub = document.createElement("span");
+    sub.className = "reward-card-sub";
+    sub.textContent = isParent ? `${t.otherName}さんが交換` : `${t.otherName}さんのご褒美`;
+    footer.appendChild(sub);
+
+    const useBtn = document.createElement("button");
+    useBtn.className = "small-inline-btn";
+    useBtn.textContent = "使用する";
+    useBtn.addEventListener("click", async () => {
+      await fetch(`/api/reward-tickets/${t.id}`, { method: "DELETE" });
+      await loadRewardTickets();
+    });
+    footer.appendChild(useBtn);
+
+    list.appendChild(buildRewardCard(t, footer));
+  });
+}
+
+async function checkUnseenTicketBadge() {
+  const buttons = document.querySelectorAll(".nav-btn[data-screen='profile-screen']");
+  if (!profile || profile.accountType !== "parent") {
+    buttons.forEach((btn) => btn.classList.remove("has-notification"));
+    return;
+  }
+  const res = await fetch("/api/reward-tickets/unseen-count");
+  if (!res.ok) return;
+  const { count } = await res.json();
+  buttons.forEach((btn) => btn.classList.toggle("has-notification", count > 0));
+}
+
+function startUnseenTicketPolling() {
+  if (unseenTicketPollInterval) clearInterval(unseenTicketPollInterval);
+  checkUnseenTicketBadge();
+  unseenTicketPollInterval = setInterval(checkUnseenTicketBadge, 20000);
 }
 
 async function sendFriendRequest() {
@@ -2280,6 +2531,18 @@ function setupEvents() {
   document
     .getElementById("friend-progress-back-btn")
     .addEventListener("click", () => switchScreen("profile-screen"));
+  document
+    .getElementById("parent-rewards-back-btn")
+    .addEventListener("click", () => switchScreen("profile-screen"));
+  document
+    .getElementById("reward-create-toggle-btn")
+    .addEventListener("click", () => {
+      const form = document.getElementById("reward-create-form");
+      form.hidden = !form.hidden;
+    });
+  document
+    .getElementById("reward-save-btn")
+    .addEventListener("click", createReward);
 
   document
     .getElementById("avatar-change-btn")
@@ -2480,6 +2743,7 @@ async function enterApp(name, id) {
   ]);
   renderWelcomeBadge();
   switchScreen("home-screen");
+  startUnseenTicketPolling();
 }
 
 async function init() {

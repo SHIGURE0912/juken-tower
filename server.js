@@ -772,6 +772,169 @@ app.get("/api/points", requireAuth, async (req, res) => {
   res.json({ points: balance });
 });
 
+// ---------- ご褒美チケット（保護者が作り、子供がポイントで交換する）----------
+
+async function requireParent(req, res, next) {
+  const user = await db.collection("users").findOne({ _id: new ObjectId(req.session.userId) });
+  if (!user || user.accountType !== "parent") {
+    return res.status(403).json({ error: "保護者アカウントのみ利用できます" });
+  }
+  next();
+}
+
+app.post("/api/rewards", requireAuth, requireParent, async (req, res) => {
+  const { title, imageData, price, repeatable } = req.body;
+
+  if (typeof title !== "string" || title.trim() === "") {
+    return res.status(400).json({ error: "ご褒美の内容を入力してね" });
+  }
+  const priceNumber = Number(price);
+  if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
+    return res.status(400).json({ error: "ポイント数が正しくありません" });
+  }
+  if (typeof imageData !== "string" || !imageData.startsWith("data:image/")) {
+    return res.status(400).json({ error: "画像を選んでね" });
+  }
+
+  const doc = {
+    parentId: req.session.userId,
+    title: title.trim(),
+    imageData,
+    price: Math.round(priceNumber),
+    repeatable: Boolean(repeatable),
+    createdAt: new Date(),
+  };
+  const result = await db.collection("rewards").insertOne(doc);
+  res.json(toClientDoc({ ...doc, _id: result.insertedId }));
+});
+
+app.get("/api/rewards", requireAuth, requireParent, async (req, res) => {
+  const rewards = await db
+    .collection("rewards")
+    .find({ parentId: req.session.userId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  res.json(rewards.map(toClientDoc));
+});
+
+app.delete("/api/rewards/:rewardId", requireAuth, requireParent, async (req, res) => {
+  await db
+    .collection("rewards")
+    .deleteOne({ _id: new ObjectId(req.params.rewardId), parentId: req.session.userId });
+  res.json({ ok: true });
+});
+
+app.get("/api/parents/:parentId/rewards", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  const parentId = req.params.parentId;
+
+  if (!(await areFriends(myId, parentId))) {
+    return res.status(403).json({ error: "フレンドではありません" });
+  }
+
+  const rewards = await db
+    .collection("rewards")
+    .find({ parentId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  res.json(rewards.map(toClientDoc));
+});
+
+app.post(
+  "/api/parents/:parentId/rewards/:rewardId/redeem",
+  requireAuth,
+  async (req, res) => {
+    const myId = req.session.userId;
+    const parentId = req.params.parentId;
+
+    if (!(await areFriends(myId, parentId))) {
+      return res.status(403).json({ error: "フレンドではありません" });
+    }
+
+    const reward = await db
+      .collection("rewards")
+      .findOne({ _id: new ObjectId(req.params.rewardId), parentId });
+    if (!reward) {
+      return res.status(404).json({ error: "ご褒美が見つかりませんでした" });
+    }
+
+    const spent = await trySpendPoints(myId, reward.price);
+    if (!spent) {
+      return res.status(400).json({ error: "ポイントが足りません" });
+    }
+
+    await db.collection("rewardTickets").insertOne({
+      parentId,
+      childId: myId,
+      title: reward.title,
+      imageData: reward.imageData,
+      price: reward.price,
+      redeemedAt: new Date(),
+      seenByParent: false,
+    });
+
+    if (!reward.repeatable) {
+      await db.collection("rewards").deleteOne({ _id: reward._id });
+    }
+
+    const { balance } = await getPointsBalance(myId);
+    res.json({ ok: true, points: balance });
+  }
+);
+
+app.get("/api/reward-tickets", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  const user = await db.collection("users").findOne({ _id: new ObjectId(myId) });
+  const isParent = user && user.accountType === "parent";
+
+  const query = isParent ? { parentId: myId } : { childId: myId };
+  const tickets = await db
+    .collection("rewardTickets")
+    .find(query)
+    .sort({ redeemedAt: -1 })
+    .toArray();
+
+  if (isParent) {
+    // 保護者が一覧を見たら「未確認」を消す（通知バッジ用）
+    await db
+      .collection("rewardTickets")
+      .updateMany({ parentId: myId, seenByParent: false }, { $set: { seenByParent: true } });
+  }
+
+  const otherIds = tickets.map((t) => (isParent ? t.childId : t.parentId));
+  const otherUsers = await db
+    .collection("users")
+    .find({ _id: { $in: otherIds.map((id) => new ObjectId(id)) } })
+    .toArray();
+  const nameById = {};
+  otherUsers.forEach((u) => {
+    nameById[u._id.toString()] = u.name;
+  });
+
+  res.json(
+    tickets.map((t) => ({
+      ...toClientDoc(t),
+      otherName: nameById[isParent ? t.childId : t.parentId] || "",
+    }))
+  );
+});
+
+app.delete("/api/reward-tickets/:ticketId", requireAuth, async (req, res) => {
+  const myId = req.session.userId;
+  await db.collection("rewardTickets").deleteOne({
+    _id: new ObjectId(req.params.ticketId),
+    $or: [{ parentId: myId }, { childId: myId }],
+  });
+  res.json({ ok: true });
+});
+
+app.get("/api/reward-tickets/unseen-count", requireAuth, requireParent, async (req, res) => {
+  const count = await db
+    .collection("rewardTickets")
+    .countDocuments({ parentId: req.session.userId, seenByParent: false });
+  res.json({ count });
+});
+
 // ---------- 日付ごとのメモ ----------
 
 app.get("/api/notes", requireAuth, async (req, res) => {
