@@ -792,14 +792,12 @@ app.post("/api/rewards", requireAuth, requireParent, async (req, res) => {
   if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
     return res.status(400).json({ error: "ポイント数が正しくありません" });
   }
-  if (typeof imageData !== "string" || !imageData.startsWith("data:image/")) {
-    return res.status(400).json({ error: "画像を選んでね" });
-  }
+  const hasImage = typeof imageData === "string" && imageData.startsWith("data:image/");
 
   const doc = {
     parentId: req.session.userId,
     title: title.trim(),
-    imageData,
+    imageData: hasImage ? imageData : null,
     price: Math.round(priceNumber),
     repeatable: Boolean(repeatable),
     createdAt: new Date(),

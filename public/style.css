@@ -1362,6 +1362,14 @@ body {
   background: #eee;
 }
 
+.reward-card-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  background: linear-gradient(135deg, #f0eeff, #e4e0ff);
+}
+
 .reward-card-body {
   padding: 10px 12px;
 }

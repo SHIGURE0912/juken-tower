@@ -2020,10 +2020,17 @@ function buildRewardCard(reward, footerContent) {
   const card = document.createElement("div");
   card.className = "reward-card";
 
-  const img = document.createElement("img");
-  img.className = "reward-card-image";
-  img.src = reward.imageData;
-  card.appendChild(img);
+  if (reward.imageData) {
+    const img = document.createElement("img");
+    img.className = "reward-card-image";
+    img.src = reward.imageData;
+    card.appendChild(img);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "reward-card-image reward-card-image-placeholder";
+    placeholder.textContent = "🎁";
+    card.appendChild(placeholder);
+  }
 
   const body = document.createElement("div");
   body.className = "reward-card-body";
@@ -2102,12 +2109,7 @@ async function createReward() {
     msg.textContent = "ポイント数を正しく入力してね";
     return;
   }
-  if (!file) {
-    msg.textContent = "画像を選んでね";
-    return;
-  }
-
-  const imageData = await resizeImageFile(file, 900);
+  const imageData = file ? await resizeImageFile(file, 900) : null;
   const res = await fetch("/api/rewards", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
