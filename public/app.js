@@ -1629,9 +1629,34 @@ function renderProfile() {
   document.getElementById("profile-friend-code").textContent = profile.friendCode;
   document.getElementById("profile-points").textContent = profile.points;
 
+  document.getElementById("profile-account-type").textContent =
+    profile.accountType === "parent" ? "保護者" : "子供";
+  document.getElementById("become-parent-card").hidden = profile.accountType === "parent";
+
   document.querySelectorAll(".reveal-btn").forEach((btn) => {
     btn.textContent = "表示";
   });
+}
+
+async function becomeParent() {
+  const emailInput = document.getElementById("become-parent-email-input");
+  const msg = document.getElementById("become-parent-message");
+  const email = emailInput.value;
+
+  const res = await fetch("/api/profile/become-parent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "変更できませんでした";
+    return;
+  }
+  msg.textContent = "";
+  emailInput.value = "";
+  await fetchProfile();
+  renderProfile();
 }
 
 function toggleReveal(targetId) {
@@ -1708,53 +1733,64 @@ function renderFriendsSection() {
     outgoingList.appendChild(row);
   });
 
+  const parents = friendsData.friends.filter((f) => f.accountType === "parent");
+  const normalFriends = friendsData.friends.filter((f) => f.accountType !== "parent");
+
+  const parentsCard = document.getElementById("parents-card");
+  const parentsList = document.getElementById("parents-list");
+  parentsCard.hidden = parents.length === 0;
+  parentsList.innerHTML = "";
+  parents.forEach((f) => parentsList.appendChild(buildFriendCard(f)));
+
   const friendsList = document.getElementById("friends-list");
   friendsList.innerHTML = "";
-  if (friendsData.friends.length === 0) {
+  if (normalFriends.length === 0) {
     friendsList.innerHTML = `<p class="no-record-text">まだフレンドがいません</p>`;
   } else {
-    friendsData.friends.forEach((f) => {
-      const card = document.createElement("div");
-      card.className = "friend-card";
-
-      const top = document.createElement("div");
-      top.className = "friend-card-top clickable";
-      top.appendChild(createAvatarElement(f.avatarType, f.avatarValue, f.name, "avatar-icon"));
-      const label = document.createElement("span");
-      label.textContent = `💬 ${f.name}`;
-      top.appendChild(label);
-      top.addEventListener("click", () =>
-        openChat(f.id, f.name, f.avatarType, f.avatarValue)
-      );
-      card.appendChild(top);
-
-      const controls = document.createElement("div");
-      controls.className = "friend-card-controls";
-
-      const shareLabel = document.createElement("label");
-      shareLabel.className = "share-toggle";
-      const shareCheckbox = document.createElement("input");
-      shareCheckbox.type = "checkbox";
-      shareCheckbox.checked = f.iShareWithThem;
-      shareCheckbox.addEventListener("change", () =>
-        setShareWithFriend(f.id, shareCheckbox.checked)
-      );
-      shareLabel.appendChild(shareCheckbox);
-      shareLabel.appendChild(document.createTextNode("この人に見せる"));
-      controls.appendChild(shareLabel);
-
-      if (f.sharesWithMe) {
-        const viewBtn = document.createElement("button");
-        viewBtn.className = "small-inline-btn view-progress-btn";
-        viewBtn.textContent = "🌟 がんばりを見る";
-        viewBtn.addEventListener("click", () => openFriendProgress(f.id, f.name));
-        controls.appendChild(viewBtn);
-      }
-
-      card.appendChild(controls);
-      friendsList.appendChild(card);
-    });
+    normalFriends.forEach((f) => friendsList.appendChild(buildFriendCard(f)));
   }
+}
+
+function buildFriendCard(f) {
+  const card = document.createElement("div");
+  card.className = "friend-card";
+
+  const top = document.createElement("div");
+  top.className = "friend-card-top clickable";
+  top.appendChild(createAvatarElement(f.avatarType, f.avatarValue, f.name, "avatar-icon"));
+  const label = document.createElement("span");
+  label.textContent = `💬 ${f.name}`;
+  top.appendChild(label);
+  top.addEventListener("click", () =>
+    openChat(f.id, f.name, f.avatarType, f.avatarValue)
+  );
+  card.appendChild(top);
+
+  const controls = document.createElement("div");
+  controls.className = "friend-card-controls";
+
+  const shareLabel = document.createElement("label");
+  shareLabel.className = "share-toggle";
+  const shareCheckbox = document.createElement("input");
+  shareCheckbox.type = "checkbox";
+  shareCheckbox.checked = f.iShareWithThem;
+  shareCheckbox.addEventListener("change", () =>
+    setShareWithFriend(f.id, shareCheckbox.checked)
+  );
+  shareLabel.appendChild(shareCheckbox);
+  shareLabel.appendChild(document.createTextNode("この人に見せる"));
+  controls.appendChild(shareLabel);
+
+  if (f.sharesWithMe) {
+    const viewBtn = document.createElement("button");
+    viewBtn.className = "small-inline-btn view-progress-btn";
+    viewBtn.textContent = "🌟 がんばりを見る";
+    viewBtn.addEventListener("click", () => openFriendProgress(f.id, f.name));
+    controls.appendChild(viewBtn);
+  }
+
+  card.appendChild(controls);
+  return card;
 }
 
 async function setShareWithFriend(friendId, share) {
@@ -2226,6 +2262,11 @@ function setupEvents() {
     .getElementById("register-btn")
     .addEventListener("click", handleRegister);
   document
+    .getElementById("register-is-parent")
+    .addEventListener("change", (e) => {
+      document.getElementById("register-email-input").hidden = !e.target.checked;
+    });
+  document
     .getElementById("logout-btn")
     .addEventListener("click", handleLogout);
 
@@ -2243,6 +2284,9 @@ function setupEvents() {
   document
     .getElementById("avatar-change-btn")
     .addEventListener("click", toggleAvatarPicker);
+  document
+    .getElementById("become-parent-btn")
+    .addEventListener("click", becomeParent);
   document
     .getElementById("avatar-picker-close-btn")
     .addEventListener("click", () => {
@@ -2349,12 +2393,14 @@ async function handleRegister() {
   const pin = document.getElementById("register-pin-input").value;
   const securityQuestion = document.getElementById("register-question-select").value;
   const securityAnswer = document.getElementById("register-answer-input").value;
+  const isParent = document.getElementById("register-is-parent").checked;
+  const email = document.getElementById("register-email-input").value;
   const msg = document.getElementById("register-message");
 
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, pin, securityQuestion, securityAnswer }),
+    body: JSON.stringify({ name, pin, securityQuestion, securityAnswer, isParent, email }),
   });
   const data = await res.json();
   if (!res.ok) {

@@ -96,8 +96,13 @@ function normalizeAnswer(text) {
   return text.trim().toLowerCase();
 }
 
+// メールアドレスの形式チェック（実在確認メールは送らない方針。形式だけしっかり見る）
+function isValidEmail(text) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim());
+}
+
 app.post("/api/auth/register", async (req, res) => {
-  const { name, pin, securityQuestion, securityAnswer } = req.body;
+  const { name, pin, securityQuestion, securityAnswer, isParent, email } = req.body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return res.status(400).json({ error: "名前を入力してね" });
@@ -110,6 +115,9 @@ app.post("/api/auth/register", async (req, res) => {
   }
   if (typeof securityAnswer !== "string" || securityAnswer.trim() === "") {
     return res.status(400).json({ error: "秘密の質問の答えを入力してね" });
+  }
+  if (isParent && (typeof email !== "string" || !isValidEmail(email))) {
+    return res.status(400).json({ error: "正しいメールアドレスを入力してね" });
   }
 
   const trimmedName = name.trim();
@@ -129,6 +137,8 @@ app.post("/api/auth/register", async (req, res) => {
     securityAnswerHash,
     securityAnswerEncrypted: encryptText(securityAnswer.trim()),
     friendCode,
+    accountType: isParent ? "parent" : "child",
+    email: isParent ? email.trim() : null,
   });
 
   req.session.userId = result.insertedId.toString();
@@ -240,7 +250,26 @@ app.get("/api/profile", requireAuth, async (req, res) => {
     towerSkin: user.towerSkin || "default",
     equippedBadge: user.equippedBadge || null,
     points: balance,
+    accountType: user.accountType || "child",
+    email: user.email || null,
   });
+});
+
+// 子供アカウントを保護者アカウントに変更する（逆方向はなし）
+app.post("/api/profile/become-parent", requireAuth, async (req, res) => {
+  const { email } = req.body;
+  if (typeof email !== "string" || !isValidEmail(email)) {
+    return res.status(400).json({ error: "正しいメールアドレスを入力してね" });
+  }
+
+  await db
+    .collection("users")
+    .updateOne(
+      { _id: new ObjectId(req.session.userId) },
+      { $set: { accountType: "parent", email: email.trim() } }
+    );
+
+  res.json({ ok: true });
 });
 
 const AVATAR_TEMPLATE_IDS = ["1", "2", "3", "4", "5"];
@@ -334,6 +363,7 @@ app.get("/api/friends", requireAuth, async (req, res) => {
       name: u.name,
       avatarType: u.avatarType || null,
       avatarValue: u.avatarValue || null,
+      accountType: u.accountType || "child",
       iShareWithThem: Boolean(shareMap[myId]),
       sharesWithMe: Boolean(shareMap[friendId]),
     };

@@ -61,6 +61,17 @@
         placeholder="質問の答え（暗証番号を忘れたときに使うよ）"
       />
 
+      <label class="parent-toggle-label">
+        <input id="register-is-parent" type="checkbox" />
+        保護者として登録する
+      </label>
+      <input
+        id="register-email-input"
+        type="email"
+        placeholder="メールアドレス（保護者の方のみ）"
+        hidden
+      />
+
       <button id="register-btn" class="action-btn">登録する</button>
       <button id="back-to-login-from-register-btn" class="link-btn">
         ログイン画面にもどる
@@ -446,6 +457,18 @@
         <span id="profile-answer" class="profile-value">••••</span>
         <button class="reveal-btn" data-target="profile-answer">表示</button>
       </div>
+      <div class="profile-row">
+        <span class="profile-label">アカウント種別</span>
+        <span id="profile-account-type" class="profile-value">子供</span>
+      </div>
+    </div>
+
+    <div id="become-parent-card" class="become-parent-card" hidden>
+      <p>保護者アカウントに変更する</p>
+      <p class="become-parent-hint">メールアドレスを登録すると、保護者アカウントに変更できます</p>
+      <input id="become-parent-email-input" type="email" placeholder="メールアドレス" />
+      <button id="become-parent-btn" class="action-btn">保護者アカウントにする</button>
+      <p id="become-parent-message" class="saved-msg"></p>
     </div>
 
     <div class="points-card">
@@ -512,6 +535,11 @@
     <div id="outgoing-requests-card" class="friend-add-card" hidden>
       <p>申請中（返事待ち）</p>
       <div id="outgoing-requests-list"></div>
+    </div>
+
+    <div id="parents-card" class="friend-add-card" hidden>
+      <p>👪 保護者</p>
+      <div id="parents-list"></div>
     </div>
 
     <div class="friend-add-card">
